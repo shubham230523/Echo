@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.shubhamthorat.echo.domain.model.AudiobookStatus
+import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
 import com.shubhamthorat.echo.feature.library.LibraryMocks
 import com.shubhamthorat.echo.feature.library.LibraryScreen
 
@@ -45,7 +46,15 @@ fun EchoNavHost(
             )
         }
         composable<Route.ImportDocument> {
-            PlaceholderScreen("Import Document")
+            ImportDocumentScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onSelectFile = {
+                    // TODO: Implement file selection logic
+                    navController.navigate(Route.DocumentAnalysis)
+                }
+            )
         }
         composable<Route.DocumentAnalysis> {
             PlaceholderScreen("Document Analysis")
