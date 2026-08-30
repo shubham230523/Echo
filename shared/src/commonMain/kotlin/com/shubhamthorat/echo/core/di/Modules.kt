@@ -2,6 +2,7 @@ package com.shubhamthorat.echo.core.di
 
 import com.shubhamthorat.echo.data.repository.RuleBasedChapterDetector
 import com.shubhamthorat.echo.domain.repository.ChapterDetector
+import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
@@ -23,11 +24,12 @@ val coreModule = module {
 val domainModule = module {
     factory { CleanDocumentTextUseCase() }
     factory<ChapterDetector> { RuleBasedChapterDetector() }
+    single { CurrentAnalysisRepository() }
 }
 
 val featureModule = module {
-    viewModel { DocumentAnalysisViewModel(get(), get()) }
-    viewModel { ChaptersViewModel() }
+    viewModel { DocumentAnalysisViewModel(get(), get(), get(), get()) }
+    viewModel { ChaptersViewModel(get()) }
 }
 
 expect val platformModule: Module

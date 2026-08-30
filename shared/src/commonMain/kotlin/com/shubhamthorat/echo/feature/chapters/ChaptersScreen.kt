@@ -53,49 +53,68 @@ fun ChaptersScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Document Header Info
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(EchoTheme.spacing.medium)
-            ) {
-                Text(
-                    text = uiState.documentTitle,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
                 )
-                Spacer(modifier = Modifier.height(EchoTheme.spacing.extraSmall))
+            } else if (uiState.error != null) {
                 Text(
-                    text = "${uiState.chapters.size} chapters detected",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = uiState.error,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(EchoTheme.spacing.large)
                 )
-            }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Document Header Info
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(EchoTheme.spacing.medium)
+                    ) {
+                        Text(
+                            text = uiState.documentTitle,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(EchoTheme.spacing.extraSmall))
+                        Text(
+                            text = "${uiState.chapters.size} chapters detected",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = EchoTheme.spacing.medium),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-
-            // Chapter List
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(EchoTheme.spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
-            ) {
-                items(uiState.chapters) { chapter ->
-                    ChapterItem(
-                        chapter = chapter,
-                        onEditClick = { onEditChapterClick(chapter) }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = EchoTheme.spacing.medium),
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
+
+                    // Chapter List
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(EchoTheme.spacing.medium),
+                        verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
+                    ) {
+                        items(uiState.chapters) { chapter ->
+                            ChapterItem(
+                                chapter = chapter,
+                                onEditClick = { onEditChapterClick(chapter) }
+                            )
+                        }
+                    }
                 }
             }
         }

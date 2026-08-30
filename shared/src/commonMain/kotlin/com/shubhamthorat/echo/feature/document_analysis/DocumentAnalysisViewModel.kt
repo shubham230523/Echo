@@ -7,6 +7,9 @@ import com.shubhamthorat.echo.core.result.AppResult
 import com.shubhamthorat.echo.domain.model.AnalysisStage
 import com.shubhamthorat.echo.domain.model.Document
 import com.shubhamthorat.echo.domain.model.DocumentStatus
+import com.shubhamthorat.echo.domain.model.ChapterDetectionRequest
+import com.shubhamthorat.echo.domain.repository.ChapterDetector
+import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
 import com.shubhamthorat.echo.domain.repository.PdfProcessor
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import kotlinx.coroutines.delay
@@ -23,7 +26,9 @@ import kotlinx.datetime.Instant
  */
 class DocumentAnalysisViewModel(
     private val pdfProcessor: PdfProcessor,
-    private val cleanDocumentTextUseCase: CleanDocumentTextUseCase
+    private val cleanDocumentTextUseCase: CleanDocumentTextUseCase,
+    private val chapterDetector: ChapterDetector,
+    private val currentAnalysisRepository: CurrentAnalysisRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DocumentAnalysisUiState())
@@ -68,14 +73,50 @@ class DocumentAnalysisViewModel(
 
             when (result) {
                 is AppResult.Success -> {
+                    // 3. Cleanup stage
                     val cleanedText = cleanDocumentTextUseCase(result.data)
+                    
+                    // 4. Chapter detection stage
                     _uiState.update { 
                         it.copy(
-                            currentStage = AnalysisStage.COMPLETED,
-                            progress = 1.0f,
-                            statusMessage = "Successfully extracted ${cleanedText.length} characters.",
-                            isCompleted = true
+                            currentStage = AnalysisStage.DETECTING_CHAPTERS,
+                            progress = 0.8f,
+                            statusMessage = "Identifying chapters..."
                         )
+                    }
+
+                    val detectionResult = chapterDetector.detectChapters(
+                        ChapterDetectionRequest(
+                            documentId = document.id,
+                            cleanedText = cleanedText
+                        )
+                    )
+
+                    when (detectionResult) {
+                        is AppResult.Success -> {
+                            currentAnalysisRepository.setAnalysisResult(
+                                document = document,
+                                chapters = detectionResult.data.chapters
+                            )
+                            
+                            _uiState.update { 
+                                it.copy(
+                                    currentStage = AnalysisStage.COMPLETED,
+                                    progress = 1.0f,
+                                    statusMessage = "Analysis complete: ${detectionResult.data.chapters.size} chapters found.",
+                                    isCompleted = true
+                                )
+                            }
+                        }
+                        is AppResult.Error -> {
+                            _uiState.update { 
+                                it.copy(
+                                    error = detectionResult.message,
+                                    statusMessage = "Chapter detection failed: ${detectionResult.message}"
+                                )
+                            }
+                        }
+                        AppResult.Loading -> {}
                     }
                 }
                 is AppResult.Error -> {
