@@ -22,7 +22,7 @@ val domainModule = module {
 }
 
 val featureModule = module {
-    viewModel { DocumentAnalysisViewModel(get()) }
+    viewModel { DocumentAnalysisViewModel(get(), get()) }
 }
 
 expect val platformModule: Module

@@ -9,10 +9,10 @@ import com.shubhamthorat.echo.domain.model.Document
 interface PdfProcessor {
 
     /**
-     * Extracts all raw text from the given document.
+     * Extracts raw text from the given document, separated by page.
      *
      * @param document The document to process.
-     * @return [AppResult] containing the extracted text on success, or an error state.
+     * @return [AppResult] containing a list of strings (one per page) on success, or an error state.
      */
-    suspend fun extractText(document: Document): AppResult<String>
+    suspend fun extractText(document: Document): AppResult<List<String>>
 }

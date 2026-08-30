@@ -8,6 +8,7 @@ import com.shubhamthorat.echo.domain.model.AnalysisStage
 import com.shubhamthorat.echo.domain.model.Document
 import com.shubhamthorat.echo.domain.model.DocumentStatus
 import com.shubhamthorat.echo.domain.repository.PdfProcessor
+import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,8 @@ import kotlinx.datetime.Instant
  * ViewModel for managing the document analysis process.
  */
 class DocumentAnalysisViewModel(
-    private val pdfProcessor: PdfProcessor
+    private val pdfProcessor: PdfProcessor,
+    private val cleanDocumentTextUseCase: CleanDocumentTextUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DocumentAnalysisUiState())
@@ -66,11 +68,12 @@ class DocumentAnalysisViewModel(
 
             when (result) {
                 is AppResult.Success -> {
+                    val cleanedText = cleanDocumentTextUseCase(result.data)
                     _uiState.update { 
                         it.copy(
                             currentStage = AnalysisStage.COMPLETED,
                             progress = 1.0f,
-                            statusMessage = "Successfully extracted ${result.data.length} characters.",
+                            statusMessage = "Successfully extracted ${cleanedText.length} characters.",
                             isCompleted = true
                         )
                     }

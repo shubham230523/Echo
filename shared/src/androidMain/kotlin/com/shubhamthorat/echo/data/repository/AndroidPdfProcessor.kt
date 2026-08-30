@@ -17,7 +17,7 @@ import java.io.InputStream
  */
 class AndroidPdfProcessor(private val context: Context) : PdfProcessor {
 
-    override suspend fun extractText(document: Document): AppResult<String> = withContext(Dispatchers.IO) {
+    override suspend fun extractText(document: Document): AppResult<List<String>> = withContext(Dispatchers.IO) {
         var inputStream: InputStream? = null
         var pdfDocument: PdfDocument? = null
         
@@ -29,19 +29,18 @@ class AndroidPdfProcessor(private val context: Context) : PdfProcessor {
             val reader = PdfReader(inputStream)
             pdfDocument = PdfDocument(reader)
             
-            val stringBuilder = StringBuilder()
+            val pages = mutableListOf<String>()
             val numberOfPages = pdfDocument.numberOfPages
             
             for (i in 1..numberOfPages) {
                 val pageText = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(i))
-                stringBuilder.append(pageText).append("\n")
+                pages.add(pageText)
             }
 
-            val text = stringBuilder.toString()
-            if (text.isBlank()) {
+            if (pages.isEmpty() || pages.all { it.isBlank() }) {
                 AppResult.Error("No text content found")
             } else {
-                AppResult.Success(text)
+                AppResult.Success(pages)
             }
         } catch (e: Exception) {
             AppResult.Error(
