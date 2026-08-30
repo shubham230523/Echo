@@ -1,5 +1,6 @@
 package com.shubhamthorat.echo.core.di
 
+import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import org.koin.compose.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
@@ -16,6 +17,10 @@ val coreModule = module {
     single { TestDependency() }
 }
 
+val domainModule = module {
+    factory { CleanDocumentTextUseCase() }
+}
+
 val featureModule = module {
     viewModel { DocumentAnalysisViewModel(get()) }
 }
@@ -23,5 +28,5 @@ val featureModule = module {
 expect val platformModule: Module
 
 val appModule = module {
-    includes(coreModule, platformModule, featureModule)
+    includes(coreModule, platformModule, domainModule, featureModule)
 }
