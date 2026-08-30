@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +34,8 @@ fun ImportDocumentScreen(
     selectedFile: PlatformFile? = null,
     modifier: Modifier = Modifier
 ) {
+    val validationResult = remember(selectedFile) { validateSelectedFile(selectedFile) }
+
     Scaffold(
         topBar = {
             EchoTopBar(
@@ -58,6 +60,7 @@ fun ImportDocumentScreen(
             } else {
                 FileSelectedContent(
                     file = selectedFile,
+                    validationResult = validationResult,
                     onReplaceFile = onSelectFile,
                     onContinue = onContinueClick
                 )
@@ -125,9 +128,12 @@ private fun ImportIdleContent(
 @Composable
 private fun FileSelectedContent(
     file: PlatformFile,
+    validationResult: FileValidationResult,
     onReplaceFile: () -> Unit,
     onContinue: () -> Unit
 ) {
+    val isValid = validationResult is FileValidationResult.Valid
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -136,7 +142,7 @@ private fun FileSelectedContent(
             imageVector = Icons.Default.PictureAsPdf,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = if (isValid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
 
         Spacer(modifier = Modifier.height(EchoTheme.spacing.medium))
@@ -144,15 +150,24 @@ private fun FileSelectedContent(
         Text(
             text = file.name,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = if (isValid) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.error,
             textAlign = TextAlign.Center
         )
 
-        file.sizeBytes?.let { size ->
+        if (isValid) {
+            file.sizeBytes?.let { size ->
+                Text(
+                    text = formatFileSize(size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = EchoTheme.spacing.extraSmall)
+                )
+            }
+        } else if (validationResult is FileValidationResult.Invalid) {
             Text(
-                text = formatFileSize(size),
+                text = validationResult.message,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = EchoTheme.spacing.extraSmall)
             )
         }
@@ -161,6 +176,7 @@ private fun FileSelectedContent(
 
         EchoButton(
             onClick = onContinue,
+            enabled = isValid,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Continue")
