@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.shubhamthorat.echo.core.common.PlatformFile
 import com.shubhamthorat.echo.core.common.rememberFilePicker
 import com.shubhamthorat.echo.domain.model.AudiobookStatus
+import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisScreen
 import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
 import com.shubhamthorat.echo.feature.library.LibraryMocks
 import com.shubhamthorat.echo.feature.library.LibraryScreen
@@ -69,7 +70,14 @@ fun EchoNavHost(
             )
         }
         composable<Route.DocumentAnalysis> {
-            PlaceholderScreen("Document Analysis")
+            DocumentAnalysisScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onComplete = {
+                    navController.navigate(Route.Chapters)
+                }
+            )
         }
         composable<Route.Chapters> {
             PlaceholderScreen("Chapters")
