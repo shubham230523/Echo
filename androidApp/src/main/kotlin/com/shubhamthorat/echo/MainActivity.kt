@@ -21,5 +21,14 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    App()
+    com.shubhamthorat.echo.presentation.theme.EchoTheme(darkTheme = true) {
+        com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisScreen(
+            uiState = com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisUiState(
+                currentStage = com.shubhamthorat.echo.feature.document_analysis.AnalysisStage.UNDERSTANDING,
+                progress = 0.5f,
+                statusMessage = "Identifying headers, paragraphs, and metadata."
+            ),
+            onBackClick = {}
+        )
+    }
 }

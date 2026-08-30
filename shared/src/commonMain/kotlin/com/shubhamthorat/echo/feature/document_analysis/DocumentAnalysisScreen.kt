@@ -15,43 +15,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
 import com.shubhamthorat.echo.presentation.theme.EchoTheme
-import kotlinx.coroutines.delay
-
-private val STAGES = listOf(
-    "Reading document" to "Opening the file and preparing for processing.",
-    "Extracting text" to "Reading the raw content from the PDF pages.",
-    "Understanding structure" to "Identifying headers, paragraphs, and metadata.",
-    "Detecting chapters" to "Organizing the content into logical sections.",
-    "Preparing narration" to "Optimizing text for natural AI voice generation."
-)
 
 @Composable
 fun DocumentAnalysisScreen(
+    uiState: DocumentAnalysisUiState,
     onBackClick: () -> Unit,
-    onComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var currentStageIndex by remember { mutableStateOf(0) }
-    var progress by remember { mutableStateOf(0f) }
-
-    // Fake progress logic for demonstration
-    LaunchedEffect(Unit) {
-        while (currentStageIndex < STAGES.size) {
-            delay(1500) // Simulate work for each stage
-            if (progress < 1f) {
-                progress += 0.2f
-            }
-            if (currentStageIndex < STAGES.size - 1) {
-                currentStageIndex++
-            } else {
-                // Last stage complete
-                delay(1000)
-                onComplete()
-                break
-            }
-        }
-    }
-
     Scaffold(
         topBar = {
             EchoTopBar(
@@ -73,7 +43,7 @@ fun DocumentAnalysisScreen(
 
             // Main Progress
             CircularProgressIndicator(
-                progress = { (currentStageIndex + 1).toFloat() / STAGES.size },
+                progress = { uiState.progress },
                 modifier = Modifier.size(120.dp),
                 color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 8.dp,
@@ -84,22 +54,22 @@ fun DocumentAnalysisScreen(
 
             // Current Stage Detail
             AnimatedContent(
-                targetState = currentStageIndex,
+                targetState = uiState.currentStage,
                 transitionSpec = {
                     fadeIn() + slideInVertically() togetherWith fadeOut() + slideOutVertically()
-                }
-            ) { index ->
-                val (title, description) = STAGES[index]
+                },
+                label = "AnalysisStageAnimation"
+            ) { stage ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = title,
+                        text = stage.title,
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(EchoTheme.spacing.small))
                     Text(
-                        text = description,
+                        text = uiState.statusMessage,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -114,11 +84,11 @@ fun DocumentAnalysisScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
             ) {
-                STAGES.forEachIndexed { index, (title, _) ->
+                AnalysisStage.entries.forEach { stage ->
                     StageItem(
-                        title = title,
-                        isCompleted = index < currentStageIndex,
-                        isActive = index == currentStageIndex
+                        title = stage.title,
+                        isCompleted = stage.ordinal < uiState.currentStage.ordinal || uiState.isCompleted,
+                        isActive = stage == uiState.currentStage && !uiState.isCompleted
                     )
                 }
             }
