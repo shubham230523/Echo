@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shubhamthorat.echo.domain.model.AudiobookStatus
 import com.shubhamthorat.echo.feature.library.LibraryMocks
 import com.shubhamthorat.echo.feature.library.LibraryScreen
 
@@ -30,9 +31,17 @@ fun EchoNavHost(
         composable<Route.Library> {
             LibraryScreen(
                 audiobooks = LibraryMocks.sampleAudiobooks,
-                onCreateAudiobookClick = { /* TODO: Navigate to Import */ },
-                onSettingsClick = { /* TODO: Navigate to Settings */ },
-                onAudiobookClick = { /* TODO: Navigate to Player */ }
+                onCreateAudiobookClick = {
+                    navController.navigate(Route.ImportDocument)
+                },
+                onSettingsClick = {
+                    navController.navigate(Route.Settings)
+                },
+                onAudiobookClick = { audiobook ->
+                    if (audiobook.status == AudiobookStatus.READY) {
+                        navController.navigate(Route.Player)
+                    }
+                }
             )
         }
         composable<Route.ImportDocument> {
