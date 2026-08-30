@@ -14,6 +14,8 @@ import androidx.navigation.compose.rememberNavController
 import com.shubhamthorat.echo.core.common.PlatformFile
 import com.shubhamthorat.echo.core.common.rememberFilePicker
 import com.shubhamthorat.echo.domain.model.AudiobookStatus
+import com.shubhamthorat.echo.feature.chapters.ChaptersScreen
+import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisScreen
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
@@ -101,7 +103,21 @@ fun EchoNavHost(
             )
         }
         composable<Route.Chapters> {
-            PlaceholderScreen("Chapters")
+            val viewModel: ChaptersViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            ChaptersScreen(
+                uiState = uiState,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onContinueClick = {
+                    navController.navigate(Route.Narration)
+                },
+                onEditChapterClick = { _ ->
+                    // TODO: Implement editing
+                }
+            )
         }
         composable<Route.Narration> {
             PlaceholderScreen("Narration")
