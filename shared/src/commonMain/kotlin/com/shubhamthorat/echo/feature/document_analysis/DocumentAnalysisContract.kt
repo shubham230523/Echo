@@ -1,15 +1,6 @@
 package com.shubhamthorat.echo.feature.document_analysis
 
-/**
- * Represents the distinct stages of the document analysis process.
- */
-enum class AnalysisStage(val title: String, val description: String) {
-    READING("Reading document", "Opening the file and preparing for processing."),
-    EXTRACTING("Extracting text", "Reading the raw content from the PDF pages."),
-    UNDERSTANDING("Understanding structure", "Identifying headers, paragraphs, and metadata."),
-    DETECTING("Detecting chapters", "Organizing the content into logical sections."),
-    PREPARING("Preparing narration", "Optimizing text for natural AI voice generation.")
-}
+import com.shubhamthorat.echo.domain.model.AnalysisStage
 
 /**
  * UI State for the Document Analysis screen.
@@ -21,9 +12,9 @@ enum class AnalysisStage(val title: String, val description: String) {
  * @property error An optional error message if the analysis failed.
  */
 data class DocumentAnalysisUiState(
-    val currentStage: AnalysisStage = AnalysisStage.READING,
+    val currentStage: AnalysisStage = AnalysisStage.READING_DOCUMENT,
     val progress: Float = 0f,
-    val statusMessage: String = AnalysisStage.READING.description,
+    val statusMessage: String = "Opening the file and preparing for processing.",
     val isCompleted: Boolean = false,
     val error: String? = null
 )

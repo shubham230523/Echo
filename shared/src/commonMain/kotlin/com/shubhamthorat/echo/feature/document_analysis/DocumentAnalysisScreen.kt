@@ -13,8 +13,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.shubhamthorat.echo.domain.model.AnalysisStage
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
 import com.shubhamthorat.echo.presentation.theme.EchoTheme
+
+private val AnalysisStage.displayTitle: String
+    get() = when (this) {
+        AnalysisStage.READING_DOCUMENT -> "Reading document"
+        AnalysisStage.EXTRACTING_TEXT -> "Extracting text"
+        AnalysisStage.ANALYZING_STRUCTURE -> "Understanding structure"
+        AnalysisStage.DETECTING_CHAPTERS -> "Detecting chapters"
+        AnalysisStage.COMPLETED -> "Analysis Complete"
+    }
 
 @Composable
 fun DocumentAnalysisScreen(
@@ -62,7 +72,7 @@ fun DocumentAnalysisScreen(
             ) { stage ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stage.title,
+                        text = stage.displayTitle,
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center
@@ -85,11 +95,13 @@ fun DocumentAnalysisScreen(
                 verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
             ) {
                 AnalysisStage.entries.forEach { stage ->
-                    StageItem(
-                        title = stage.title,
-                        isCompleted = stage.ordinal < uiState.currentStage.ordinal || uiState.isCompleted,
-                        isActive = stage == uiState.currentStage && !uiState.isCompleted
-                    )
+                    if (stage != AnalysisStage.COMPLETED) {
+                        StageItem(
+                            title = stage.displayTitle,
+                            isCompleted = stage.ordinal < uiState.currentStage.ordinal || uiState.isCompleted,
+                            isActive = stage == uiState.currentStage && !uiState.isCompleted
+                        )
+                    }
                 }
             }
         }
