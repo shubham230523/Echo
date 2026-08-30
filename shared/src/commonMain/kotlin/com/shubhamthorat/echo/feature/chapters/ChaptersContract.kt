@@ -14,5 +14,6 @@ data class ChaptersUiState(
     val documentTitle: String = "",
     val chapters: List<Chapter> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val editingChapter: Chapter? = null
 )

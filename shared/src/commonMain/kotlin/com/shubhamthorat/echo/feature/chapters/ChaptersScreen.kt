@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +26,8 @@ fun ChaptersScreen(
     onBackClick: () -> Unit,
     onContinueClick: () -> Unit,
     onEditChapterClick: (Chapter) -> Unit,
+    onDismissEditDialog: () -> Unit,
+    onConfirmEditTitle: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -117,6 +119,40 @@ fun ChaptersScreen(
                     }
                 }
             }
+        }
+
+        // Edit Title Dialog
+        uiState.editingChapter?.let { chapter ->
+            var editedTitle by remember(chapter.id) { 
+                mutableStateOf(chapter.title) 
+            }
+
+            AlertDialog(
+                onDismissRequest = onDismissEditDialog,
+                title = { Text("Edit Chapter Title") },
+                text = {
+                    OutlinedTextField(
+                        value = editedTitle,
+                        onValueChange = { editedTitle = it },
+                        label = { Text("Title") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { onConfirmEditTitle(editedTitle) },
+                        enabled = editedTitle.isNotBlank()
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismissEditDialog) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

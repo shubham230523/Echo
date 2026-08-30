@@ -114,9 +114,9 @@ fun EchoNavHost(
                 onContinueClick = {
                     navController.navigate(Route.Narration)
                 },
-                onEditChapterClick = { _ ->
-                    // TODO: Implement editing
-                }
+                onEditChapterClick = viewModel::onEditChapterClick,
+                onDismissEditDialog = viewModel::onDismissEditDialog,
+                onConfirmEditTitle = viewModel::onUpdateChapterTitle
             )
         }
         composable<Route.Narration> {

@@ -25,6 +25,32 @@ class ChaptersViewModel(
         observeAnalysisResult()
     }
 
+    fun onEditChapterClick(chapter: Chapter) {
+        _uiState.value = _uiState.value.copy(editingChapter = chapter)
+    }
+
+    fun onDismissEditDialog() {
+        _uiState.value = _uiState.value.copy(editingChapter = null)
+    }
+
+    fun onUpdateChapterTitle(newTitle: String) {
+        val currentEditing = _uiState.value.editingChapter ?: return
+        if (newTitle.isBlank()) return
+
+        val updatedChapters = _uiState.value.chapters.map { chapter ->
+            if (chapter.id == currentEditing.id) {
+                chapter.copy(title = newTitle)
+            } else {
+                chapter
+            }
+        }
+
+        _uiState.value = _uiState.value.copy(
+            chapters = updatedChapters,
+            editingChapter = null
+        )
+    }
+
     private fun observeAnalysisResult() {
         currentAnalysisRepository.currentDocument.onEach { document ->
             _uiState.value = _uiState.value.copy(
