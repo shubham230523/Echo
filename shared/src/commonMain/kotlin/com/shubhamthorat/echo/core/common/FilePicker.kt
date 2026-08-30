@@ -1,5 +1,6 @@
 package com.shubhamthorat.echo.core.common
 
+import androidx.compose.runtime.Composable
 import kotlinx.serialization.Serializable
 
 /**
@@ -19,10 +20,18 @@ data class PlatformFile(
 /**
  * Platform-specific abstraction for picking a PDF file.
  */
-expect class FilePicker {
+interface FilePicker {
     /**
      * Launches the platform-specific file picker to select a PDF.
-     * @return [PlatformFile] if a file was selected, null otherwise.
      */
-    suspend fun pickPdf(): PlatformFile?
+    fun pickPdf()
 }
+
+/**
+ * Remembers a platform-specific file picker.
+ *
+ * @param onFileSelected Callback when a file is successfully selected.
+ * @return [FilePicker] implementation for the current platform.
+ */
+@Composable
+expect fun rememberFilePicker(onFileSelected: (PlatformFile) -> Unit): FilePicker

@@ -6,9 +6,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shubhamthorat.echo.core.common.PlatformFile
+import com.shubhamthorat.echo.core.common.rememberFilePicker
 import com.shubhamthorat.echo.domain.model.AudiobookStatus
 import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
 import com.shubhamthorat.echo.feature.library.LibraryMocks
@@ -23,6 +26,11 @@ fun EchoNavHost(
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()
+    var selectedFile by remember { mutableStateOf<PlatformFile?>(null) }
+
+    val filePicker = rememberFilePicker { file ->
+        selectedFile = file
+    }
 
     NavHost(
         navController = navController,
@@ -33,6 +41,7 @@ fun EchoNavHost(
             LibraryScreen(
                 audiobooks = LibraryMocks.sampleAudiobooks,
                 onCreateAudiobookClick = {
+                    selectedFile = null
                     navController.navigate(Route.ImportDocument)
                 },
                 onSettingsClick = {
@@ -51,9 +60,12 @@ fun EchoNavHost(
                     navController.popBackStack()
                 },
                 onSelectFile = {
-                    // TODO: Implement file selection logic
+                    filePicker.pickPdf()
+                },
+                onContinueClick = {
                     navController.navigate(Route.DocumentAnalysis)
-                }
+                },
+                selectedFile = selectedFile
             )
         }
         composable<Route.DocumentAnalysis> {

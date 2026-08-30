@@ -1,11 +1,18 @@
 package com.shubhamthorat.echo.core.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+
 /**
  * iOS-specific implementation of FilePicker.
  */
-actual class FilePicker {
-    actual suspend fun pickPdf(): PlatformFile? {
-        // TODO: Implement PDF selection using UIDocumentPickerViewController
-        return null
+class IosFilePicker : FilePicker {
+    override fun pickPdf() {
+        // TODO: Implement
     }
+}
+
+@Composable
+actual fun rememberFilePicker(onFileSelected: (PlatformFile) -> Unit): FilePicker {
+    return remember { IosFilePicker() }
 }

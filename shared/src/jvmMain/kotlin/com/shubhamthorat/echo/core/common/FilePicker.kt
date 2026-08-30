@@ -1,11 +1,18 @@
 package com.shubhamthorat.echo.core.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+
 /**
- * JVM (Desktop) implementation of FilePicker.
+ * JVM-specific implementation of FilePicker.
  */
-actual class FilePicker {
-    actual suspend fun pickPdf(): PlatformFile? {
-        // TODO: Implement PDF selection using AWT FileDialog or JFileChooser
-        return null
+class JvmFilePicker : FilePicker {
+    override fun pickPdf() {
+        // TODO: Implement
     }
+}
+
+@Composable
+actual fun rememberFilePicker(onFileSelected: (PlatformFile) -> Unit): FilePicker {
+    return remember { JvmFilePicker() }
 }
