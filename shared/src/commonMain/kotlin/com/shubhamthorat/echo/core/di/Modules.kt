@@ -1,5 +1,7 @@
 package com.shubhamthorat.echo.core.di
 
+import com.shubhamthorat.echo.data.repository.RuleBasedChapterDetector
+import com.shubhamthorat.echo.domain.repository.ChapterDetector
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import org.koin.compose.viewmodel.dsl.viewModel
@@ -19,6 +21,7 @@ val coreModule = module {
 
 val domainModule = module {
     factory { CleanDocumentTextUseCase() }
+    factory<ChapterDetector> { RuleBasedChapterDetector() }
 }
 
 val featureModule = module {
