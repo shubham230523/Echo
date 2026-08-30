@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.shubhamthorat.echo.feature.library.LibraryScreen
 
 /**
  * Main navigation host for the Echo application.
@@ -26,7 +27,10 @@ fun EchoNavHost(
         modifier = modifier
     ) {
         composable<Route.Library> {
-            PlaceholderScreen("Library")
+            LibraryScreen(
+                onCreateAudiobookClick = { /* TODO: Navigate to Import */ },
+                onSettingsClick = { /* TODO: Navigate to Settings */ }
+            )
         }
         composable<Route.ImportDocument> {
             PlaceholderScreen("Import Document")
