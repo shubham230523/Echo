@@ -58,6 +58,7 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.koin.android)
+            implementation(libs.itext.core)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
