@@ -24,7 +24,7 @@ fun AppAndroidPreview() {
     com.shubhamthorat.echo.presentation.theme.EchoTheme(darkTheme = true) {
         com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisScreen(
             uiState = com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisUiState(
-                currentStage = com.shubhamthorat.echo.feature.document_analysis.AnalysisStage.UNDERSTANDING,
+                currentStage = com.shubhamthorat.echo.domain.model.AnalysisStage.ANALYZING_STRUCTURE,
                 progress = 0.5f,
                 statusMessage = "Identifying headers, paragraphs, and metadata."
             ),

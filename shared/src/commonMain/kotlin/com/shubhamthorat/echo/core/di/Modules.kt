@@ -1,5 +1,8 @@
 package com.shubhamthorat.echo.core.di
 
+import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
+import org.koin.compose.viewmodel.dsl.viewModel
+import org.koin.core.module.Module
 import org.koin.dsl.module
 
 /**
@@ -13,6 +16,12 @@ val coreModule = module {
     single { TestDependency() }
 }
 
+val featureModule = module {
+    viewModel { DocumentAnalysisViewModel(get()) }
+}
+
+expect val platformModule: Module
+
 val appModule = module {
-    includes(coreModule)
+    includes(coreModule, platformModule, featureModule)
 }

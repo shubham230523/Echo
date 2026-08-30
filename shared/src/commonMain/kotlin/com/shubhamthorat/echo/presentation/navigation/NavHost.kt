@@ -7,18 +7,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.shubhamthorat.echo.core.common.PlatformFile
 import com.shubhamthorat.echo.core.common.rememberFilePicker
 import com.shubhamthorat.echo.domain.model.AudiobookStatus
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisScreen
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
 import com.shubhamthorat.echo.feature.library.LibraryMocks
 import com.shubhamthorat.echo.feature.library.LibraryScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 /**
  * Main navigation host for the Echo application.
@@ -72,11 +73,22 @@ fun EchoNavHost(
             )
         }
         composable<Route.DocumentAnalysis> {
-            val viewModel: DocumentAnalysisViewModel = viewModel()
+            val viewModel: DocumentAnalysisViewModel = koinViewModel()
             val uiState by viewModel.uiState.collectAsState()
+
+            LaunchedEffect(Unit) {
+                selectedFile?.let { file ->
+                    viewModel.startAnalysis(file)
+                } ?: run {
+                    // If no file selected (shouldn't happen with correct nav), go back
+                    navController.popBackStack()
+                }
+            }
 
             LaunchedEffect(uiState.isCompleted) {
                 if (uiState.isCompleted) {
+                    // Small delay to let user see completion
+                    delay(1000)
                     navController.navigate(Route.Chapters)
                 }
             }
