@@ -51,6 +51,71 @@ class ChaptersViewModel(
         )
     }
 
+    fun toggleChapterSelection(chapterId: String) {
+        val currentSelected = _uiState.value.selectedChapterIds
+        val newSelected = if (currentSelected.contains(chapterId)) {
+            currentSelected - chapterId
+        } else {
+            currentSelected + chapterId
+        }
+        _uiState.value = _uiState.value.copy(selectedChapterIds = newSelected)
+    }
+
+    fun mergeSelectedChapters() {
+        val selectedIds = _uiState.value.selectedChapterIds
+        if (selectedIds.size < 2) return
+
+        val allChapters = _uiState.value.chapters
+        val selectedChapters = allChapters.filter { it.id in selectedIds }
+            .sortedBy { it.index }
+
+        // Check adjacency
+        val indices = selectedChapters.map { it.index }
+        val isAdjacent = indices.zipWithNext().all { (a, b) -> b == a + 1 }
+
+        if (!isAdjacent) {
+            _uiState.value = _uiState.value.copy(error = "Only adjacent chapters can be merged.")
+            return
+        }
+
+        val firstChapter = selectedChapters.first()
+        val mergedChapter = Chapter(
+            id = firstChapter.id,
+            documentId = firstChapter.documentId,
+            index = firstChapter.index,
+            title = firstChapter.title,
+            originalText = selectedChapters.joinToString("\n\n") { it.originalText },
+            narrationText = selectedChapters.joinToString("\n\n") { it.narrationText },
+            estimatedDurationSeconds = selectedChapters.sumOf { it.estimatedDurationSeconds },
+            status = firstChapter.status
+        )
+
+        val newChaptersList = mutableListOf<Chapter>()
+        var insertedMerged = false
+
+        allChapters.forEach { chapter ->
+            if (chapter.id in selectedIds) {
+                if (!insertedMerged) {
+                    newChaptersList.add(mergedChapter)
+                    insertedMerged = true
+                }
+            } else {
+                newChaptersList.add(chapter)
+            }
+        }
+
+        // Re-index
+        val reIndexedChapters = newChaptersList.mapIndexed { i, chapter ->
+            chapter.copy(index = i)
+        }
+
+        _uiState.value = _uiState.value.copy(
+            chapters = reIndexedChapters,
+            selectedChapterIds = emptySet(),
+            error = null
+        )
+    }
+
     private fun observeAnalysisResult() {
         currentAnalysisRepository.currentDocument.onEach { document ->
             _uiState.value = _uiState.value.copy(

@@ -7,7 +7,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,13 +30,26 @@ fun ChaptersScreen(
     onEditChapterClick: (Chapter) -> Unit,
     onDismissEditDialog: () -> Unit,
     onConfirmEditTitle: (String) -> Unit,
+    onChapterSelect: (Chapter) -> Unit,
+    onMergeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         topBar = {
             EchoTopBar(
                 title = "Chapters",
-                onNavigationClick = onBackClick
+                onNavigationClick = onBackClick,
+                actions = {
+                    if (uiState.selectedChapterIds.size >= 2) {
+                        IconButton(onClick = onMergeClick) {
+                            Icon(
+                                imageVector = Icons.Default.Merge,
+                                contentDescription = "Merge Chapters",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
             )
         },
         bottomBar = {
@@ -113,7 +128,9 @@ fun ChaptersScreen(
                         items(uiState.chapters) { chapter ->
                             ChapterItem(
                                 chapter = chapter,
-                                onEditClick = { onEditChapterClick(chapter) }
+                                isSelected = uiState.selectedChapterIds.contains(chapter.id),
+                                onEditClick = { onEditChapterClick(chapter) },
+                                onSelectClick = { onChapterSelect(chapter) }
                             )
                         }
                     }
@@ -160,37 +177,59 @@ fun ChaptersScreen(
 @Composable
 private fun ChapterItem(
     chapter: Chapter,
-    onEditClick: () -> Unit
+    isSelected: Boolean,
+    onEditClick: () -> Unit,
+    onSelectClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(EchoTheme.spacing.medium))
-            .clickable(onClick = onEditClick),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        shape = RoundedCornerShape(EchoTheme.spacing.medium)
+            .clickable(onClick = onSelectClick),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        },
+        shape = RoundedCornerShape(EchoTheme.spacing.medium),
+        border = if (isSelected) {
+            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else null
     ) {
         Row(
             modifier = Modifier
                 .padding(EchoTheme.spacing.medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Chapter Number Bubble
+            // Chapter Number Bubble / Selection Indicator
             Box(
                 modifier = Modifier
                     .size(40.dp)
                     .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        },
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = (chapter.index + 1).toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Selected",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(
+                        text = (chapter.index + 1).toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(EchoTheme.spacing.medium))

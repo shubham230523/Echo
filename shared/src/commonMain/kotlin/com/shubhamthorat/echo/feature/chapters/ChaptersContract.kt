@@ -15,5 +15,6 @@ data class ChaptersUiState(
     val chapters: List<Chapter> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val editingChapter: Chapter? = null
+    val editingChapter: Chapter? = null,
+    val selectedChapterIds: Set<String> = emptySet()
 )

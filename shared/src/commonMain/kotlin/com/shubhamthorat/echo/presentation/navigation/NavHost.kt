@@ -116,7 +116,9 @@ fun EchoNavHost(
                 },
                 onEditChapterClick = viewModel::onEditChapterClick,
                 onDismissEditDialog = viewModel::onDismissEditDialog,
-                onConfirmEditTitle = viewModel::onUpdateChapterTitle
+                onConfirmEditTitle = viewModel::onUpdateChapterTitle,
+                onChapterSelect = { viewModel.toggleChapterSelection(it.id) },
+                onMergeClick = viewModel::mergeSelectedChapters
             )
         }
         composable<Route.Narration> {
