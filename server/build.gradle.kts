@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
     implementation(libs.pdfbox)
+    implementation(libs.jaudiotagger)
 
     testImplementation(libs.kotlin.test)
 }

@@ -6,6 +6,7 @@ import com.shubhamthorat.echo.server.api.dto.v1.AssistPronunciationRequest
 import com.shubhamthorat.echo.server.api.dto.v1.DetectDialogueRequest
 import com.shubhamthorat.echo.server.api.dto.v1.PrepareNarrationRequest
 import com.shubhamthorat.echo.server.document.DocumentService
+import com.shubhamthorat.echo.server.generation.GenerationService
 import com.shubhamthorat.echo.server.narration.NarrationService
 import com.shubhamthorat.echo.server.voice.VoiceService
 import com.shubhamthorat.echo.server.voice.TTSProvider
@@ -26,7 +27,7 @@ fun Application.configureRouting(
     dialogueService: DialogueService,
     voiceService: VoiceService,
     pronunciationService: PronunciationService,
-    ttsProvider: TTSProvider
+    generationService: GenerationService
 ) {
     val documentService = DocumentService(aiProvider)
     val narrationService = NarrationService(aiProvider)
@@ -132,10 +133,24 @@ fun Application.configureRouting(
             ))
         }
 
-        post("/tts/synthesize") {
-            val request = call.receive<TTSRequest>()
-            val result = ttsProvider.synthesize(request)
-            call.respond(result)
+        route("/generation") {
+            post("/chapter") {
+                val request = call.receive<com.shubhamthorat.echo.server.api.dto.v1.GenerateAudiobookRequest>()
+                // Simplified for single chapter as requested
+                val result = generationService.generateChapterAudio(
+                    chapterId = request.chapterIds.first(),
+                    narrationText = "Sample narration text from document", // In real app, fetch from DB
+                    voiceId = request.voiceId,
+                    speed = 1.0f
+                )
+                call.respond(result)
+            }
+            
+            get("/{id}") {
+                val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing generation ID")
+                val status = generationService.getStatus(id) ?: return@get call.respond(HttpStatusCode.NotFound)
+                call.respond(status)
+            }
         }
     }
 }
