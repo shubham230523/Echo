@@ -70,11 +70,33 @@ class OpenAICompatibleAIProvider(
     }
 
     override suspend fun detectDialogue(request: DialogueDetectionRequest): DialogueDetectionResponse {
-        throw UnsupportedOperationException("Not implemented yet")
+        val prompt = PromptTemplates.dialogueDetectionPrompt(request.text)
+        val response = callAi(prompt)
+        
+        return try {
+            JsonExtractor.extract<DialogueDetectionResponse>(response)
+        } catch (e: Exception) {
+            DialogueDetectionResponse(
+                segments = listOf(
+                    DialogueSegment(request.text, "Narrator", false)
+                )
+            )
+        }
     }
 
     override suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse {
-        throw UnsupportedOperationException("Not implemented yet")
+        val prompt = PromptTemplates.pronunciationPrompt(request.words, request.context)
+        val response = callAi(prompt)
+        
+        return try {
+            JsonExtractor.extract<PronunciationResponse>(response)
+        } catch (e: Exception) {
+            PronunciationResponse(
+                guides = request.words.map { 
+                    WordPronunciation(it, null, null)
+                }
+            )
+        }
     }
 }
 

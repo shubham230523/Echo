@@ -95,4 +95,57 @@ object PromptTemplates {
             $text
         """.trimIndent()
     }
+
+    fun dialogueDetectionPrompt(text: String): String {
+        return """
+            Analyze the following text and segment it into narration and dialogue blocks.
+            Identify the potential speaker for each dialogue block.
+            If a speaker is uncertain, use "Unknown" or your best guess based on context.
+            For narration, set "speaker" to "Narrator" and "isDialogue" to false.
+
+            Respond ONLY with a valid JSON object matching the schema below.
+            Ensure every part of the input text is accounted for in the segments.
+
+            SCHEMA:
+            {
+              "segments": [
+                {
+                  "text": "Segment of text here",
+                  "speaker": "Speaker name or Narrator",
+                  "isDialogue": true
+                }
+              ]
+            }
+
+            INPUT TEXT:
+            ${text.take(15000)}
+        """.trimIndent()
+    }
+
+    fun pronunciationPrompt(words: List<String>, context: String?): String {
+        val contextInfo = context?.let { "Context: $it" } ?: "No specific context provided."
+        return """
+            Provide pronunciation guides for the following words.
+            $contextInfo
+
+            Respond ONLY with a valid JSON object matching the schema below.
+            For each word, provide:
+            1. IPA (International Phonetic Alphabet) notation.
+            2. A simple phonetic respelling (e.g., "Apple" -> "A-puhl").
+
+            SCHEMA:
+            {
+              "guides": [
+                {
+                  "word": "word",
+                  "ipa": "/ˈwɜːrd/",
+                  "phoneticRespelling": "WURD"
+                }
+              ]
+            }
+
+            WORDS:
+            ${words.joinToString(", ")}
+        """.trimIndent()
+    }
 }

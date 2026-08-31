@@ -67,6 +67,13 @@ data class PrepareNarrationResponse(
     val estimatedDurationSeconds: Double
 )
 
+// --- Dialogue Detection ---
+
+@Serializable
+data class DetectDialogueRequest(
+    val text: String
+)
+
 // --- Voice Management ---
 
 @Serializable

@@ -13,6 +13,9 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import com.shubhamthorat.echo.server.ai.AIProviderFactory
+import com.shubhamthorat.echo.server.ai.DialogueService
+import com.shubhamthorat.echo.server.voice.MockVoiceProvider
+import com.shubhamthorat.echo.server.voice.VoiceService
 
 fun main() {
     embeddedServer(Netty, port = Config.port, host = Config.host, module = Application::module)
@@ -27,9 +30,11 @@ fun Application.module() {
     }
     
     val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
+    val dialogueService = DialogueService(aiProvider)
+    val voiceService = VoiceService(MockVoiceProvider())
     
     configureLogging()
     configureSerialization()
     configureStatusPages()
-    configureRouting(aiProvider)
+    configureRouting(aiProvider, dialogueService, voiceService)
 }

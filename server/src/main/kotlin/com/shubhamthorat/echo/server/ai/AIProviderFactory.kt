@@ -53,10 +53,25 @@ private class MockAIProvider : AIProvider {
     }
 
     override suspend fun detectDialogue(request: DialogueDetectionRequest): DialogueDetectionResponse {
-        return DialogueDetectionResponse(segments = emptyList())
+        return DialogueDetectionResponse(
+            segments = listOf(
+                DialogueSegment("He looked at her and said,", "Narrator", false),
+                DialogueSegment(" \"I'll be back soon.\"", "Male Character", true),
+                DialogueSegment(" She nodded and whispered,", "Narrator", false),
+                DialogueSegment(" \"I know.\"", "Female Character", true)
+            )
+        )
     }
 
     override suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse {
-        return PronunciationResponse(guides = emptyList())
+        return PronunciationResponse(
+            guides = request.words.map { word ->
+                WordPronunciation(
+                    word = word,
+                    ipa = "/mock/",
+                    phoneticRespelling = "MOCK"
+                )
+            }
+        )
     }
 }

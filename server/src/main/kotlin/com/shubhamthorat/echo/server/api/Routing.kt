@@ -1,10 +1,13 @@
 package com.shubhamthorat.echo.server.api
 
 import com.shubhamthorat.echo.server.Config
-import com.shubhamthorat.echo.server.ai.AIProvider
+import com.shubhamthorat.echo.server.ai.*
+import com.shubhamthorat.echo.server.api.dto.v1.DetectDialogueRequest
 import com.shubhamthorat.echo.server.api.dto.v1.PrepareNarrationRequest
 import com.shubhamthorat.echo.server.document.DocumentService
 import com.shubhamthorat.echo.server.narration.NarrationService
+import com.shubhamthorat.echo.server.voice.VoiceService
+import com.shubhamthorat.echo.server.api.dto.v1.GetVoicesResponse
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -15,7 +18,11 @@ import io.ktor.utils.io.jvm.javaio.*
 import java.io.File
 import java.time.Instant
 
-fun Application.configureRouting(aiProvider: AIProvider) {
+fun Application.configureRouting(
+    aiProvider: AIProvider,
+    dialogueService: DialogueService,
+    voiceService: VoiceService
+) {
     val documentService = DocumentService(aiProvider)
     val narrationService = NarrationService(aiProvider)
     
@@ -88,6 +95,30 @@ fun Application.configureRouting(aiProvider: AIProvider) {
                 val result = narrationService.prepareNarration(request.text, request.style)
                 call.respond(result)
             }
+        }
+
+        route("/dialogue") {
+            post("/detect") {
+                val request = call.receive<DetectDialogueRequest>()
+                val result = dialogueService.detectDialogue(request.text)
+                call.respond(result)
+            }
+        }
+
+        get("/voices") {
+            val voices = voiceService.getVoices()
+            call.respond(GetVoicesResponse(
+                voices = voices.map { voice ->
+                    GetVoicesResponse.VoiceDto(
+                        id = voice.id,
+                        name = voice.name,
+                        provider = voice.provider,
+                        language = voice.language,
+                        gender = voice.gender,
+                        previewUrl = voice.previewUrl
+                    )
+                }
+            ))
         }
     }
 }
