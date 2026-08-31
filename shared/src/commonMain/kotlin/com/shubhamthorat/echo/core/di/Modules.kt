@@ -49,6 +49,7 @@ val dataModule = module {
     single<DocumentRepository> { RoomDocumentRepository(get()) }
     single<ChapterRepository> { RoomChapterRepository(get()) }
     single<AudiobookRepository> { RoomAudiobookRepository(get()) }
+    single<RemoteGenerationRepository> { ApiRemoteGenerationRepository(get()) }
     single<SystemRepository> { ApiSystemRepository(get()) }
 }
 
