@@ -29,4 +29,14 @@ interface AIProvider {
      * Provides pronunciation guides for difficult words or names.
      */
     suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse
+
+    /**
+     * Transcribes audio into text.
+     */
+    suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse
+
+    /**
+     * Compares original source text with its transcription to find discrepancies.
+     */
+    suspend fun compareTranscription(request: ContentComparisonRequest): ContentComparisonResponse
 }

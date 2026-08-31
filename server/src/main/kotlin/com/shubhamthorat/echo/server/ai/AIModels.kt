@@ -111,3 +111,38 @@ data class WordPronunciation(
     val confidence: Float,
     val audioUrl: String? = null
 )
+
+/**
+ * --- Transcription and Validation ---
+ */
+@Serializable
+data class TranscriptionRequest(
+    val audioUrl: String,
+    val language: String? = null
+)
+
+@Serializable
+data class TranscriptionResponse(
+    val text: String,
+    val confidence: Float
+)
+
+@Serializable
+data class ContentComparisonRequest(
+    val sourceText: String,
+    val transcription: String
+)
+
+@Serializable
+data class ContentComparisonResponse(
+    val matchScore: Float,
+    val issues: List<String>,
+    val differences: List<ContentDifference>
+)
+
+@Serializable
+data class ContentDifference(
+    val type: String, // e.g., "MISSING", "MODIFIED", "ADDED"
+    val description: String,
+    val severity: String // e.g., "LOW", "MEDIUM", "HIGH"
+)

@@ -155,4 +155,34 @@ object PromptTemplates {
             ${text.take(10000)}
         """.trimIndent()
     }
+
+    fun contentComparisonPrompt(sourceText: String, transcription: String): String {
+        return """
+            Compare the following source text with its transcription.
+            Identify missing sections, significant content differences, and potential truncations.
+            Ignore minor punctuation or formatting differences.
+            The matching does NOT need to be word-for-word, but the meaning and key information must be preserved.
+
+            Respond ONLY with a valid JSON object matching the schema below.
+
+            SCHEMA:
+            {
+              "matchScore": 0.95,
+              "issues": ["List of identified issues"],
+              "differences": [
+                {
+                  "type": "MISSING",
+                  "description": "Description of the difference",
+                  "severity": "HIGH"
+                }
+              ]
+            }
+
+            SOURCE TEXT:
+            $sourceText
+
+            TRANSCRIPTION:
+            $transcription
+        """.trimIndent()
+    }
 }

@@ -71,4 +71,19 @@ private class MockAIProvider : AIProvider {
             )
         )
     }
+
+    override suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse {
+        return TranscriptionResponse(
+            text = "This is a mock transcription of the audio file.",
+            confidence = 0.98f
+        )
+    }
+
+    override suspend fun compareTranscription(request: ContentComparisonRequest): ContentComparisonResponse {
+        return ContentComparisonResponse(
+            matchScore = 0.95f,
+            issues = emptyList(),
+            differences = emptyList()
+        )
+    }
 }

@@ -94,6 +94,27 @@ class OpenAICompatibleAIProvider(
             PronunciationResponse(guides = emptyList())
         }
     }
+
+    override suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse {
+        // Transcription usually requires a different API endpoint (e.g., Whisper)
+        // For now, we'll throw or return empty if not fully configured for audio
+        throw UnsupportedOperationException("STT not implemented for generic OpenAI compatible provider yet.")
+    }
+
+    override suspend fun compareTranscription(request: ContentComparisonRequest): ContentComparisonResponse {
+        val prompt = PromptTemplates.contentComparisonPrompt(request.sourceText, request.transcription)
+        val response = callAi(prompt)
+        
+        return try {
+            JsonExtractor.extract<ContentComparisonResponse>(response)
+        } catch (e: Exception) {
+            ContentComparisonResponse(
+                matchScore = 0.0f,
+                issues = listOf("Failed to parse comparison response: ${e.message}"),
+                differences = emptyList()
+            )
+        }
+    }
 }
 
 @Serializable
