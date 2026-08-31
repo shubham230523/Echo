@@ -1,12 +1,15 @@
 package com.shubhamthorat.echo.feature.voice
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.shubhamthorat.echo.domain.model.Voice
 import com.shubhamthorat.echo.domain.model.VoiceProvider
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for managing voice selection.
@@ -75,5 +78,34 @@ class VoiceSelectionViewModel : ViewModel() {
 
     fun onVoiceSelected(voiceId: String) {
         _uiState.update { it.copy(selectedVoiceId = voiceId) }
+    }
+
+    fun onPreviewClick(voiceId: String) {
+        val currentState = _uiState.value
+        
+        // If clicking the one currently playing/loading, stop it
+        if (currentState.previewingVoiceId == voiceId) {
+            _uiState.update { it.copy(previewingVoiceId = null, isPreviewLoading = false) }
+            return
+        }
+
+        // Start loading preview
+        viewModelScope.launch {
+            _uiState.update { it.copy(previewingVoiceId = voiceId, isPreviewLoading = true) }
+            
+            // Simulate network/buffer delay
+            delay(1000)
+            
+            // Start "playing"
+            _uiState.update { it.copy(isPreviewLoading = false) }
+            
+            // Simulate playback duration
+            delay(5000)
+            
+            // Stop if still the same voice
+            if (_uiState.value.previewingVoiceId == voiceId) {
+                _uiState.update { it.copy(previewingVoiceId = null) }
+            }
+        }
     }
 }

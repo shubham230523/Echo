@@ -153,7 +153,8 @@ fun EchoNavHost(
                 onContinueClick = {
                     navController.navigate(Route.Generation)
                 },
-                onVoiceSelect = viewModel::onVoiceSelected
+                onVoiceSelect = viewModel::onVoiceSelected,
+                onPreviewClick = viewModel::onPreviewClick
             )
         }
         composable<Route.Generation> {

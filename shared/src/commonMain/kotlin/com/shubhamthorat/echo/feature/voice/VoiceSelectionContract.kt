@@ -13,9 +13,12 @@ import com.shubhamthorat.echo.domain.model.Voice
 data class VoiceSelectionUiState(
     val voices: List<Voice> = emptyList(),
     val selectedVoiceId: String? = null,
+    val previewingVoiceId: String? = null,
+    val isPreviewLoading: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 ) {
     val selectedVoice: Voice? = voices.find { it.id == selectedVoiceId }
     val isContinueEnabled: Boolean = selectedVoiceId != null
+    val isPreviewing: Boolean = previewingVoiceId != null && !isPreviewLoading
 }

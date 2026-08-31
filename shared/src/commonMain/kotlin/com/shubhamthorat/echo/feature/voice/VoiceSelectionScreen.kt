@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,6 +28,7 @@ fun VoiceSelectionScreen(
     onBackClick: () -> Unit,
     onContinueClick: () -> Unit,
     onVoiceSelect: (String) -> Unit,
+    onPreviewClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -77,10 +80,16 @@ fun VoiceSelectionScreen(
                     }
 
                     items(uiState.voices) { voice ->
+                        val isPreviewLoading = uiState.previewingVoiceId == voice.id && uiState.isPreviewLoading
+                        val isPlaying = uiState.previewingVoiceId == voice.id && !uiState.isPreviewLoading
+                        
                         VoiceItem(
                             voice = voice,
                             isSelected = uiState.selectedVoiceId == voice.id,
-                            onSelect = { onVoiceSelect(voice.id) }
+                            isPreviewLoading = isPreviewLoading,
+                            isPlaying = isPlaying,
+                            onSelect = { onVoiceSelect(voice.id) },
+                            onPreviewClick = { onPreviewClick(voice.id) }
                         )
                     }
                 }
@@ -93,7 +102,10 @@ fun VoiceSelectionScreen(
 private fun VoiceItem(
     voice: Voice,
     isSelected: Boolean,
-    onSelect: () -> Unit
+    isPreviewLoading: Boolean,
+    isPlaying: Boolean,
+    onSelect: () -> Unit,
+    onPreviewClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -114,6 +126,33 @@ private fun VoiceItem(
             modifier = Modifier.padding(EchoTheme.spacing.medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Preview Button
+            IconButton(
+                onClick = onPreviewClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape
+                    )
+            ) {
+                if (isPreviewLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Stop Preview" else "Play Preview",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(EchoTheme.spacing.medium))
+
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
