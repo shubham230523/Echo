@@ -104,10 +104,18 @@ data class GetVoicesResponse(
 data class GenerateAudiobookRequest(
     val documentId: String,
     val voiceId: String,
-    val chapterIds: List<String>,
+    val chapters: List<ChapterRequest>,
     val title: String? = null,
-    val author: String? = null
-)
+    val author: String? = null,
+    val speed: Float = 1.0f
+) {
+    @Serializable
+    data class ChapterRequest(
+        val id: String,
+        val title: String,
+        val text: String
+    )
+}
 
 @Serializable
 data class GenerateAudiobookResponse(

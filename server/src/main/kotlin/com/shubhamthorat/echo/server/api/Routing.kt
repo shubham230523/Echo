@@ -2,16 +2,13 @@ package com.shubhamthorat.echo.server.api
 
 import com.shubhamthorat.echo.server.Config
 import com.shubhamthorat.echo.server.ai.*
-import com.shubhamthorat.echo.server.api.dto.v1.AssistPronunciationRequest
-import com.shubhamthorat.echo.server.api.dto.v1.DetectDialogueRequest
-import com.shubhamthorat.echo.server.api.dto.v1.PrepareNarrationRequest
+import com.shubhamthorat.echo.server.api.dto.v1.*
 import com.shubhamthorat.echo.server.document.DocumentService
+import com.shubhamthorat.echo.server.generation.AudiobookGenerationService
+import com.shubhamthorat.echo.server.generation.ChapterInput
 import com.shubhamthorat.echo.server.generation.GenerationService
 import com.shubhamthorat.echo.server.narration.NarrationService
 import com.shubhamthorat.echo.server.voice.VoiceService
-import com.shubhamthorat.echo.server.voice.TTSProvider
-import com.shubhamthorat.echo.server.voice.TTSRequest
-import com.shubhamthorat.echo.server.api.dto.v1.GetVoicesResponse
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -21,16 +18,18 @@ import io.ktor.server.request.*
 import io.ktor.utils.io.jvm.javaio.*
 import java.io.File
 import java.time.Instant
+import java.util.*
 
 fun Application.configureRouting(
     aiProvider: AIProvider,
     dialogueService: DialogueService,
     voiceService: VoiceService,
     pronunciationService: PronunciationService,
-    generationService: GenerationService
+    narrationService: NarrationService,
+    generationService: GenerationService,
+    audiobookGenerationService: AudiobookGenerationService
 ) {
     val documentService = DocumentService(aiProvider)
-    val narrationService = NarrationService(aiProvider)
     
     routing {
         get("/") {
@@ -88,9 +87,7 @@ fun Application.configureRouting(
                     val result = documentService.analyzePdf(uploadedFile)
                     call.respond(HttpStatusCode.Accepted, result)
                 } finally {
-                    // In a real app, we might move this to a more permanent storage or keep for later stages
-                    // For now, we'll keep it in temp or delete after metadata extraction as per "Store temporarily"
-                    // Requirement says "Store temporarily", so we won't delete immediately here if it's needed for next steps.
+                    // Cleanup handled by system or moved to permanent storage
                 }
             }
         }
@@ -134,22 +131,34 @@ fun Application.configureRouting(
         }
 
         route("/generation") {
-            post("/chapter") {
-                val request = call.receive<com.shubhamthorat.echo.server.api.dto.v1.GenerateAudiobookRequest>()
-                // Simplified for single chapter as requested
-                val result = generationService.generateChapterAudio(
-                    chapterId = request.chapterIds.first(),
-                    narrationText = "Sample narration text from document", // In real app, fetch from DB
+            post("/audiobook") {
+                val request = call.receive<GenerateAudiobookRequest>()
+                val jobId = audiobookGenerationService.startGenerationJob(
+                    documentId = request.documentId,
+                    chapters = request.chapters.map { 
+                        ChapterInput(it.id, it.title, it.text)
+                    },
                     voiceId = request.voiceId,
-                    speed = 1.0f
+                    speed = request.speed
                 )
-                call.respond(result)
+                call.respond(HttpStatusCode.Accepted, GenerateAudiobookResponse(
+                    generationId = jobId,
+                    status = "PENDING",
+                    queuePosition = 1
+                ))
             }
             
             get("/{id}") {
                 val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing generation ID")
-                val status = generationService.getStatus(id) ?: return@get call.respond(HttpStatusCode.NotFound)
-                call.respond(status)
+                val status = audiobookGenerationService.getJobStatus(id) ?: return@get call.respond(HttpStatusCode.NotFound)
+                
+                call.respond(GenerationStatusResponse(
+                    generationId = status.jobId,
+                    status = status.status,
+                    progress = status.progress,
+                    message = status.currentChapterTitle ?: "Processing...",
+                    audiobookId = if (status.status == "COMPLETED") UUID.randomUUID().toString() else null // In real app, associate with final ID
+                ))
             }
         }
     }

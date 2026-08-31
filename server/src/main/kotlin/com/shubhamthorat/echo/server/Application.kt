@@ -15,7 +15,9 @@ import io.ktor.serialization.kotlinx.json.*
 import com.shubhamthorat.echo.server.ai.AIProviderFactory
 import com.shubhamthorat.echo.server.ai.DialogueService
 import com.shubhamthorat.echo.server.ai.PronunciationService
+import com.shubhamthorat.echo.server.narration.NarrationService
 import com.shubhamthorat.echo.server.generation.GenerationService
+import com.shubhamthorat.echo.server.generation.AudiobookGenerationService
 import com.shubhamthorat.echo.server.voice.MockVoiceProvider
 import com.shubhamthorat.echo.server.voice.TTSProviderFactory
 import com.shubhamthorat.echo.server.voice.VoiceService
@@ -34,13 +36,24 @@ fun Application.module() {
     
     val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
     val ttsProvider = TTSProviderFactory(httpClient, Config.tts).create()
+    
     val dialogueService = DialogueService(aiProvider)
     val pronunciationService = PronunciationService(aiProvider)
+    val narrationService = NarrationService(aiProvider)
     val generationService = GenerationService(ttsProvider)
+    val audiobookGenerationService = AudiobookGenerationService(narrationService, generationService)
     val voiceService = VoiceService(MockVoiceProvider())
     
     configureLogging()
     configureSerialization()
     configureStatusPages()
-    configureRouting(aiProvider, dialogueService, voiceService, pronunciationService, generationService)
+    configureRouting(
+        aiProvider = aiProvider,
+        dialogueService = dialogueService,
+        voiceService = voiceService,
+        pronunciationService = pronunciationService,
+        narrationService = narrationService,
+        generationService = generationService,
+        audiobookGenerationService = audiobookGenerationService
+    )
 }
