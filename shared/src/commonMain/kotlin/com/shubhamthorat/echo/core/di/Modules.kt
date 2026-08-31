@@ -1,8 +1,10 @@
 package com.shubhamthorat.echo.core.di
 
+import com.shubhamthorat.echo.data.repository.DefaultNarrationProcessor
 import com.shubhamthorat.echo.data.repository.RuleBasedChapterDetector
 import com.shubhamthorat.echo.domain.repository.ChapterDetector
 import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
+import com.shubhamthorat.echo.domain.repository.NarrationProcessor
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
@@ -24,6 +26,7 @@ val coreModule = module {
 val domainModule = module {
     factory { CleanDocumentTextUseCase() }
     factory<ChapterDetector> { RuleBasedChapterDetector() }
+    factory<NarrationProcessor> { DefaultNarrationProcessor() }
     single { CurrentAnalysisRepository() }
 }
 
