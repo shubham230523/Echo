@@ -34,9 +34,11 @@ fun PlayerScreen(
     onNextChapter: () -> Unit,
     onPreviousChapter: () -> Unit,
     onChapterSelected: (AudioChapter) -> Unit,
+    onSpeedSelected: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showChapters by remember { mutableStateOf(false) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -130,6 +132,39 @@ fun PlayerScreen(
             }
 
             Spacer(modifier = Modifier.height(EchoTheme.spacing.large))
+
+            // Speed Control
+            Box {
+                TextButton(
+                    onClick = { showSpeedMenu = true },
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp)
+                ) {
+                    Text(
+                        text = "${uiState.playbackSpeed}x",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = showSpeedMenu,
+                    onDismissRequest = { showSpeedMenu = false }
+                ) {
+                    listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
+                        DropdownMenuItem(
+                            text = { Text("${speed}x") },
+                            onClick = {
+                                onSpeedSelected(speed)
+                                showSpeedMenu = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(EchoTheme.spacing.small))
 
             // Controls
             Row(

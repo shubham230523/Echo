@@ -194,7 +194,8 @@ fun EchoNavHost(
                 onSkipBackward = viewModel::skipBackward,
                 onNextChapter = viewModel::nextChapter,
                 onPreviousChapter = viewModel::previousChapter,
-                onChapterSelected = viewModel::selectChapter
+                onChapterSelected = viewModel::selectChapter,
+                onSpeedSelected = viewModel::setPlaybackSpeed
             )
         }
         composable<Route.Settings> {
