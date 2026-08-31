@@ -164,6 +164,16 @@ fun Application.configureRouting(
                     audiobookId = if (status.status == "COMPLETED") UUID.randomUUID().toString() else null
                 ))
             }
+
+            post("/{id}/retry") {
+                val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing generation ID")
+                val success = audiobookGenerationService.retryJob(id)
+                if (success) {
+                    call.respond(HttpStatusCode.Accepted, mapOf("status" to "retrying"))
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Job cannot be retried"))
+                }
+            }
         }
     }
 }

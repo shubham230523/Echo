@@ -26,17 +26,37 @@ class AudiobookGenerationService(
             jobId = jobId,
             documentId = documentId,
             totalChapters = chapters.size,
-            status = "PENDING"
+            status = "PENDING",
+            inputs = chapters,
+            voiceId = voiceId,
+            speed = speed
         )
         jobs[jobId] = initialStatus
 
+        runJob(jobId)
+
+        return jobId
+    }
+
+    private fun runJob(jobId: String) {
+        val jobStatus = jobs[jobId] ?: return
+        val chapters = jobStatus.inputs
+        val voiceId = jobStatus.voiceId
+        val speed = jobStatus.speed
+
         scope.launch {
             try {
-                updateJobStatus(jobId) { it.copy(status = "PROCESSING") }
+                updateJobStatus(jobId) { it.copy(status = "PROCESSING", errorMessage = null) }
                 
-                val results = mutableListOf<ChapterGenerationStatus>()
+                val currentResults = jobStatus.results.toMutableList()
+                val currentFailures = jobStatus.failedChapters.toMutableList()
                 
                 chapters.forEachIndexed { index, chapter ->
+                    // Skip if already completed in a previous run
+                    if (currentResults.any { it.chapterId == chapter.id && it.status == "COMPLETED" }) {
+                        return@forEachIndexed
+                    }
+
                     updateJobStatus(jobId) { 
                         it.copy(
                             currentStep = "Preparing narration",
@@ -46,30 +66,56 @@ class AudiobookGenerationService(
                         ) 
                     }
 
-                    // 1. Prepare Narration
-                    val prepared = narrationService.prepareNarration(chapter.originalText, "storytelling")
-                    
-                    updateJobStatus(jobId) { it.copy(currentStep = "Generating audio") }
+                    try {
+                        // 1. Prepare Narration
+                        val prepared = narrationService.prepareNarration(chapter.originalText, "storytelling")
+                        
+                        updateJobStatus(jobId) { it.copy(currentStep = "Generating audio") }
 
-                    // 2. Generate Audio (sequential, uses lock in generationService)
-                    val generationResult = generationService.generateChapterAudio(
-                        chapterId = chapter.id,
-                        narrationText = prepared.preparedText,
-                        voiceId = voiceId,
-                        speed = speed
-                    )
+                        // 2. Generate Audio
+                        val generationResult = generationService.generateChapterAudio(
+                            chapterId = chapter.id,
+                            narrationText = prepared.preparedText,
+                            voiceId = voiceId,
+                            speed = speed
+                        )
 
-                    if (generationResult.status == "FAILED") {
-                        throw Exception("Failed to generate audio for chapter '${chapter.title}': ${generationResult.errorMessage}")
-                    }
+                        if (generationResult.status == "FAILED") {
+                            throw Exception(generationResult.errorMessage ?: "TTS Failure")
+                        }
 
-                    results.add(generationResult)
-                    
-                    updateJobStatus(jobId) { 
-                        it.copy(
-                            completedChapters = index + 1,
-                            progress = (index + 1).toFloat() / chapters.size
-                        ) 
+                        currentResults.add(generationResult)
+                        // Remove from failures if it was there
+                        currentFailures.removeAll { it.chapterId == chapter.id }
+                        
+                        updateJobStatus(jobId) { 
+                            it.copy(
+                                completedChapters = currentResults.size,
+                                results = currentResults,
+                                failedChapters = currentFailures,
+                                progress = (index + 1).toFloat() / chapters.size
+                            ) 
+                        }
+                    } catch (e: Exception) {
+                        val retryCount = (currentFailures.find { it.chapterId == chapter.id }?.retryCount ?: 0) + 1
+                        val failure = FailedChapterRecord(
+                            chapterId = chapter.id,
+                            title = chapter.title,
+                            reason = e.message ?: "Unknown",
+                            retryCount = retryCount
+                        )
+                        currentFailures.removeAll { it.chapterId == chapter.id }
+                        currentFailures.add(failure)
+                        
+                        updateJobStatus(jobId) { 
+                            it.copy(
+                                failedChapters = currentFailures,
+                                status = "FAILED",
+                                errorMessage = "Failed at chapter '${chapter.title}': ${e.message}"
+                            ) 
+                        }
+                        // Stop sequential processing on error
+                        return@launch
                     }
                 }
 
@@ -77,21 +123,26 @@ class AudiobookGenerationService(
                     it.copy(
                         status = "COMPLETED",
                         currentStep = "Finished",
-                        progress = 1.0f,
-                        results = results
+                        progress = 1.0f
                     ) 
                 }
             } catch (e: Exception) {
                 updateJobStatus(jobId) { 
                     it.copy(
                         status = "FAILED",
-                        errorMessage = e.message ?: "Unknown error during audiobook generation"
+                        errorMessage = e.message ?: "Unexpected error"
                     ) 
                 }
             }
         }
+    }
 
-        return jobId
+    fun retryJob(jobId: String): Boolean {
+        val status = jobs[jobId] ?: return false
+        if (status.status != "FAILED") return false
+        
+        runJob(jobId)
+        return true
     }
 
     fun getJobStatus(jobId: String): AudiobookJobStatus? = jobs[jobId]
@@ -120,5 +171,18 @@ data class AudiobookJobStatus(
     val progress: Float = 0f,
     val status: String,
     val results: List<ChapterGenerationStatus> = emptyList(),
-    val errorMessage: String? = null
+    val failedChapters: List<FailedChapterRecord> = emptyList(),
+    val errorMessage: String? = null,
+    // Store inputs for retry support
+    val inputs: List<ChapterInput> = emptyList(),
+    val voiceId: String = "",
+    val speed: Float = 1.0f
+)
+
+data class FailedChapterRecord(
+    val chapterId: String,
+    val title: String,
+    val reason: String,
+    val retryCount: Int,
+    val timestamp: Long = System.currentTimeMillis()
 )
