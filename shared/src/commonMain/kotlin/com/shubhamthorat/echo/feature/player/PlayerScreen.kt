@@ -24,8 +24,9 @@ import com.shubhamthorat.echo.presentation.theme.EchoTheme
 fun PlayerScreen(
     uiState: PlayerUiState,
     onBackClick: () -> Unit,
-    onTogglePlayPause: () -> Unit,
-    onSeek: (Float) -> Unit,
+    onPlayClick: () -> Unit,
+    onPauseClick: () -> Unit,
+    onSeek: (Long) -> Unit,
     onSkipForward: () -> Unit,
     onSkipBackward: () -> Unit,
     onNextChapter: () -> Unit,
@@ -72,7 +73,7 @@ fun PlayerScreen(
 
             // Titles
             Text(
-                text = uiState.audiobookTitle,
+                text = uiState.audiobook?.title ?: "",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -84,7 +85,7 @@ fun PlayerScreen(
             Spacer(modifier = Modifier.height(EchoTheme.spacing.extraSmall))
             
             Text(
-                text = uiState.chapterTitle,
+                text = uiState.currentChapter?.chapterId ?: "",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
@@ -98,7 +99,7 @@ fun PlayerScreen(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Slider(
                     value = uiState.progress,
-                    onValueChange = { onSeek(it * uiState.totalDurationSeconds) },
+                    onValueChange = { onSeek((it * uiState.duration).toLong()) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = SliderDefaults.colors(
                         thumbColor = MaterialTheme.colorScheme.primary,
@@ -135,7 +136,7 @@ fun PlayerScreen(
                 // Previous Chapter
                 IconButton(
                     onClick = onPreviousChapter,
-                    enabled = uiState.hasPreviousChapter
+                    enabled = uiState.audiobook != null // Simplified for mock
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipPrevious,
@@ -155,7 +156,7 @@ fun PlayerScreen(
 
                 // Play/Pause
                 Surface(
-                    onClick = onTogglePlayPause,
+                    onClick = { if (uiState.isPlaying) onPauseClick() else onPlayClick() },
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(72.dp)
@@ -182,7 +183,7 @@ fun PlayerScreen(
                 // Next Chapter
                 IconButton(
                     onClick = onNextChapter,
-                    enabled = uiState.hasNextChapter
+                    enabled = uiState.audiobook != null // Simplified for mock
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,

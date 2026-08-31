@@ -1,33 +1,32 @@
 package com.shubhamthorat.echo.feature.player
 
+import com.shubhamthorat.echo.domain.model.Audiobook
+import com.shubhamthorat.echo.domain.model.AudioChapter
+
 /**
  * UI State for the Audiobook Player screen.
  *
- * @property audiobookTitle The title of the audiobook being played.
- * @property chapterTitle The title of the current chapter.
- * @property coverUrl The URL or local path to the audiobook cover image.
+ * @property audiobook The audiobook currently being played.
+ * @property currentChapter The chapter currently being played.
+ * @property currentPosition The current playback position in milliseconds.
+ * @property duration The total duration of the current chapter in milliseconds.
  * @property isPlaying Whether audio is currently playing.
- * @property currentPositionSeconds The current playback position in seconds.
- * @property totalDurationSeconds The total duration of the current chapter in seconds.
- * @property hasNextChapter Whether there is a next chapter available.
- * @property hasPreviousChapter Whether there is a previous chapter available.
+ * @property playbackSpeed The current playback speed (e.g., 1.0f).
  */
 data class PlayerUiState(
-    val audiobookTitle: String = "",
-    val chapterTitle: String = "",
-    val coverUrl: String? = null,
+    val audiobook: Audiobook? = null,
+    val currentChapter: AudioChapter? = null,
+    val currentPosition: Long = 0L,
+    val duration: Long = 0L,
     val isPlaying: Boolean = false,
-    val currentPositionSeconds: Float = 0f,
-    val totalDurationSeconds: Float = 0f,
-    val hasNextChapter: Boolean = false,
-    val hasPreviousChapter: Boolean = false
+    val playbackSpeed: Float = 1.0f
 ) {
-    val progress: Float = if (totalDurationSeconds > 0) currentPositionSeconds / totalDurationSeconds else 0f
+    val progress: Float = if (duration > 0) currentPosition.toFloat() / duration else 0f
     
-    val currentPositionText: String = formatDuration(currentPositionSeconds.toInt())
-    val totalDurationText: String = formatDuration(totalDurationSeconds.toInt())
+    val currentPositionText: String = formatDuration(currentPosition / 1000)
+    val totalDurationText: String = formatDuration(duration / 1000)
 
-    private fun formatDuration(seconds: Int): String {
+    private fun formatDuration(seconds: Long): String {
         val mins = seconds / 60
         val secs = seconds % 60
         return "${mins}:${secs.toString().padStart(2, '0')}"

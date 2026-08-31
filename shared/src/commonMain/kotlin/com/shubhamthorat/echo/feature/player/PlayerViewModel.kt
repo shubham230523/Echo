@@ -2,6 +2,10 @@ package com.shubhamthorat.echo.feature.player
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shubhamthorat.echo.domain.model.Audiobook
+import com.shubhamthorat.echo.domain.model.AudiobookStatus
+import com.shubhamthorat.echo.domain.model.AudioChapter
+import com.shubhamthorat.echo.domain.model.AudioGenerationStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,87 +13,115 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+// Removed Clock import
+import kotlinx.datetime.Instant
+// Removed Clock import
 class PlayerViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        PlayerUiState(
-            audiobookTitle = "The Great Gatsby",
-            chapterTitle = "Chapter 1: The Introduction",
-            isPlaying = false,
-            currentPositionSeconds = 45f,
-            totalDurationSeconds = 640f,
-            hasNextChapter = true,
-            hasPreviousChapter = false
-        )
-    )
+    private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     private var playbackJob: Job? = null
 
-    fun togglePlayPause() {
-        val newState = !_uiState.value.isPlaying
-        _uiState.update { it.copy(isPlaying = newState) }
+    init {
+        // Load mock data for initial UI state
+        val mockAudiobook = Audiobook(
+            id = "gatsby_1",
+            documentId = "doc_1",
+            title = "The Great Gatsby",
+            author = "F. Scott Fitzgerald",
+            coverImagePath = null,
+            totalDurationSeconds = 1800,
+            chapterCount = 9,
+            createdAt = Instant.fromEpochMilliseconds(0),
+            updatedAt = Instant.fromEpochMilliseconds(0),
+            status = AudiobookStatus.READY
+        )
         
-        if (newState) {
-            startPlaybackSimulation()
-        } else {
-            playbackJob?.cancel()
+        val mockChapter = AudioChapter(
+            chapterId = "chapter_1",
+            audioPath = "path/to/audio.mp3",
+            durationSeconds = 640.0,
+            fileSizeBytes = 1024L * 1024 * 5,
+            generationStatus = AudioGenerationStatus.COMPLETED
+        )
+
+        _uiState.update { 
+            it.copy(
+                audiobook = mockAudiobook,
+                currentChapter = mockChapter,
+                duration = 640000L, // 640 seconds in ms
+                currentPosition = 45000L // 45 seconds in ms
+            )
         }
     }
 
-    private fun startPlaybackSimulation() {
+    fun play() {
+        if (_uiState.value.isPlaying) return
+        
+        _uiState.update { it.copy(isPlaying = true) }
+        startPlaybackSimulation()
+    }
+
+    fun pause() {
+        if (!_uiState.value.isPlaying) return
+        
+        _uiState.update { it.copy(isPlaying = false) }
         playbackJob?.cancel()
-        playbackJob = viewModelScope.launch {
-            while (_uiState.value.isPlaying && _uiState.value.currentPositionSeconds < _uiState.value.totalDurationSeconds) {
-                delay(1000)
-                _uiState.update { 
-                    it.copy(currentPositionSeconds = (it.currentPositionSeconds + 1).coerceAtMost(it.totalDurationSeconds))
-                }
-            }
-            if (_uiState.value.currentPositionSeconds >= _uiState.value.totalDurationSeconds) {
-                _uiState.update { it.copy(isPlaying = false) }
-            }
-        }
     }
 
-    fun seekTo(position: Float) {
-        _uiState.update { it.copy(currentPositionSeconds = position) }
+    fun seekTo(position: Long) {
+        _uiState.update { 
+            it.copy(currentPosition = position.coerceIn(0, it.duration))
+        }
     }
 
     fun skipForward() {
-        _uiState.update { 
-            it.copy(currentPositionSeconds = (it.currentPositionSeconds + 15).coerceAtMost(it.totalDurationSeconds))
-        }
+        seekTo(_uiState.value.currentPosition + 15000L) // +15 seconds
     }
 
     fun skipBackward() {
-        _uiState.update { 
-            it.copy(currentPositionSeconds = (it.currentPositionSeconds - 15).coerceAtLeast(0f))
-        }
+        seekTo(_uiState.value.currentPosition - 15000L) // -15 seconds
     }
 
     fun nextChapter() {
+        // Mocking next chapter transition
         _uiState.update { 
             it.copy(
-                chapterTitle = "Chapter 2: East Egg",
-                currentPositionSeconds = 0f,
-                totalDurationSeconds = 820f,
-                hasPreviousChapter = true,
-                hasNextChapter = true
+                currentPosition = 0L,
+                duration = 820000L,
+                currentChapter = it.currentChapter?.copy(chapterId = "chapter_2", durationSeconds = 820.0)
             )
         }
     }
 
     fun previousChapter() {
+        // Mocking previous chapter transition
         _uiState.update { 
             it.copy(
-                chapterTitle = "Chapter 1: The Introduction",
-                currentPositionSeconds = 0f,
-                totalDurationSeconds = 640f,
-                hasPreviousChapter = false,
-                hasNextChapter = true
+                currentPosition = 0L,
+                duration = 640000L,
+                currentChapter = it.currentChapter?.copy(chapterId = "chapter_1", durationSeconds = 640.0)
             )
+        }
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        _uiState.update { it.copy(playbackSpeed = speed) }
+    }
+
+    private fun startPlaybackSimulation() {
+        playbackJob?.cancel()
+        playbackJob = viewModelScope.launch {
+            while (_uiState.value.isPlaying && _uiState.value.currentPosition < _uiState.value.duration) {
+                delay(1000)
+                _uiState.update { 
+                    it.copy(currentPosition = (it.currentPosition + 1000).coerceAtMost(it.duration))
+                }
+            }
+            if (_uiState.value.currentPosition >= _uiState.value.duration) {
+                _uiState.update { it.copy(isPlaying = false) }
+            }
         }
     }
 }

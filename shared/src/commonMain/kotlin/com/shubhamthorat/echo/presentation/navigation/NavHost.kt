@@ -187,7 +187,8 @@ fun EchoNavHost(
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onTogglePlayPause = viewModel::togglePlayPause,
+                onPlayClick = viewModel::play,
+                onPauseClick = viewModel::pause,
                 onSeek = viewModel::seekTo,
                 onSkipForward = viewModel::skipForward,
                 onSkipBackward = viewModel::skipBackward,
