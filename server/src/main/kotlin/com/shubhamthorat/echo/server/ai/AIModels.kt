@@ -94,7 +94,7 @@ data class DialogueSegment(
  */
 @Serializable
 data class PronunciationRequest(
-    val words: List<String>,
+    val text: String,
     val context: String? = null
 )
 
@@ -108,5 +108,6 @@ data class WordPronunciation(
     val word: String,
     val ipa: String?,
     val phoneticRespelling: String?,
+    val confidence: Float,
     val audioUrl: String? = null
 )

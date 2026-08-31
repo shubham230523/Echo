@@ -65,13 +65,10 @@ private class MockAIProvider : AIProvider {
 
     override suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse {
         return PronunciationResponse(
-            guides = request.words.map { word ->
-                WordPronunciation(
-                    word = word,
-                    ipa = "/mock/",
-                    phoneticRespelling = "MOCK"
-                )
-            }
+            guides = listOf(
+                WordPronunciation("Echo", "/ˈɛkoʊ/", "EH-koh", 0.99f),
+                WordPronunciation("Ktor", "/keɪtɔːr/", "KAY-tor", 0.95f)
+            )
         )
     }
 }

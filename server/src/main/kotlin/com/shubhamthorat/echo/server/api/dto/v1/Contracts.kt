@@ -74,6 +74,13 @@ data class DetectDialogueRequest(
     val text: String
 )
 
+// --- Pronunciation Assistance ---
+
+@Serializable
+data class AssistPronunciationRequest(
+    val text: String
+)
+
 // --- Voice Management ---
 
 @Serializable

@@ -14,6 +14,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import com.shubhamthorat.echo.server.ai.AIProviderFactory
 import com.shubhamthorat.echo.server.ai.DialogueService
+import com.shubhamthorat.echo.server.ai.PronunciationService
 import com.shubhamthorat.echo.server.voice.MockVoiceProvider
 import com.shubhamthorat.echo.server.voice.VoiceService
 
@@ -31,10 +32,11 @@ fun Application.module() {
     
     val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
     val dialogueService = DialogueService(aiProvider)
+    val pronunciationService = PronunciationService(aiProvider)
     val voiceService = VoiceService(MockVoiceProvider())
     
     configureLogging()
     configureSerialization()
     configureStatusPages()
-    configureRouting(aiProvider, dialogueService, voiceService)
+    configureRouting(aiProvider, dialogueService, voiceService, pronunciationService)
 }

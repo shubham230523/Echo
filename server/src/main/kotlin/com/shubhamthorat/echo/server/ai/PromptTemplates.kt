@@ -122,16 +122,22 @@ object PromptTemplates {
         """.trimIndent()
     }
 
-    fun pronunciationPrompt(words: List<String>, context: String?): String {
-        val contextInfo = context?.let { "Context: $it" } ?: "No specific context provided."
+    fun pronunciationPrompt(text: String): String {
         return """
-            Provide pronunciation guides for the following words.
-            $contextInfo
+            Detect potentially difficult words or phrases in the following text that might need special pronunciation guidance for a narrator.
+            Focus on:
+            1. Unfamiliar proper names (people, places).
+            2. Complex technical or scientific terminology.
+            3. Foreign words or loanwords.
+            4. Acronyms that are not obvious.
+
+            For each detected item, provide:
+            - The original word/phrase.
+            - IPA (International Phonetic Alphabet) notation.
+            - A simple phonetic respelling (e.g., "Apple" -> "A-puhl").
+            - A confidence score (0.0 to 1.0) for your guidance.
 
             Respond ONLY with a valid JSON object matching the schema below.
-            For each word, provide:
-            1. IPA (International Phonetic Alphabet) notation.
-            2. A simple phonetic respelling (e.g., "Apple" -> "A-puhl").
 
             SCHEMA:
             {
@@ -139,13 +145,14 @@ object PromptTemplates {
                 {
                   "word": "word",
                   "ipa": "/ˈwɜːrd/",
-                  "phoneticRespelling": "WURD"
+                  "phoneticRespelling": "WURD",
+                  "confidence": 0.98
                 }
               ]
             }
 
-            WORDS:
-            ${words.joinToString(", ")}
+            INPUT TEXT:
+            ${text.take(10000)}
         """.trimIndent()
     }
 }

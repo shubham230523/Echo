@@ -85,17 +85,13 @@ class OpenAICompatibleAIProvider(
     }
 
     override suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse {
-        val prompt = PromptTemplates.pronunciationPrompt(request.words, request.context)
+        val prompt = PromptTemplates.pronunciationPrompt(request.text)
         val response = callAi(prompt)
         
         return try {
             JsonExtractor.extract<PronunciationResponse>(response)
         } catch (e: Exception) {
-            PronunciationResponse(
-                guides = request.words.map { 
-                    WordPronunciation(it, null, null)
-                }
-            )
+            PronunciationResponse(guides = emptyList())
         }
     }
 }

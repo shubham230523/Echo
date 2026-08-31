@@ -2,6 +2,7 @@ package com.shubhamthorat.echo.server.api
 
 import com.shubhamthorat.echo.server.Config
 import com.shubhamthorat.echo.server.ai.*
+import com.shubhamthorat.echo.server.api.dto.v1.AssistPronunciationRequest
 import com.shubhamthorat.echo.server.api.dto.v1.DetectDialogueRequest
 import com.shubhamthorat.echo.server.api.dto.v1.PrepareNarrationRequest
 import com.shubhamthorat.echo.server.document.DocumentService
@@ -21,7 +22,8 @@ import java.time.Instant
 fun Application.configureRouting(
     aiProvider: AIProvider,
     dialogueService: DialogueService,
-    voiceService: VoiceService
+    voiceService: VoiceService,
+    pronunciationService: PronunciationService
 ) {
     val documentService = DocumentService(aiProvider)
     val narrationService = NarrationService(aiProvider)
@@ -93,6 +95,12 @@ fun Application.configureRouting(
             post("/prepare") {
                 val request = call.receive<PrepareNarrationRequest>()
                 val result = narrationService.prepareNarration(request.text, request.style)
+                call.respond(result)
+            }
+
+            post("/pronunciation") {
+                val request = call.receive<AssistPronunciationRequest>()
+                val result = pronunciationService.assistPronunciation(request.text)
                 call.respond(result)
             }
         }
