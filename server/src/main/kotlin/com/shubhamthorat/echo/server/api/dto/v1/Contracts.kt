@@ -56,7 +56,7 @@ data class GetChaptersResponse(
 
 @Serializable
 data class PrepareNarrationRequest(
-    val chapterId: String,
+    val text: String,
     val style: String = "neutral"
 )
 

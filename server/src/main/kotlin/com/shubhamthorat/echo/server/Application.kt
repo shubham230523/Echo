@@ -8,14 +8,28 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
+import com.shubhamthorat.echo.server.ai.AIProviderFactory
+
 fun main() {
     embeddedServer(Netty, port = Config.port, host = Config.host, module = Application::module)
         .start(wait = true)
 }
 
 fun Application.module() {
+    val httpClient = HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
+    
+    val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
+    
     configureLogging()
     configureSerialization()
     configureStatusPages()
-    configureRouting()
+    configureRouting(aiProvider)
 }

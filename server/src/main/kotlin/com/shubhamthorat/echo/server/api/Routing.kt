@@ -1,7 +1,10 @@
 package com.shubhamthorat.echo.server.api
 
 import com.shubhamthorat.echo.server.Config
+import com.shubhamthorat.echo.server.ai.AIProvider
+import com.shubhamthorat.echo.server.api.dto.v1.PrepareNarrationRequest
 import com.shubhamthorat.echo.server.document.DocumentService
+import com.shubhamthorat.echo.server.narration.NarrationService
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -12,8 +15,9 @@ import io.ktor.utils.io.jvm.javaio.*
 import java.io.File
 import java.time.Instant
 
-fun Application.configureRouting() {
-    val documentService = DocumentService()
+fun Application.configureRouting(aiProvider: AIProvider) {
+    val documentService = DocumentService(aiProvider)
+    val narrationService = NarrationService(aiProvider)
     
     routing {
         get("/") {
@@ -40,7 +44,7 @@ fun Application.configureRouting() {
             post("/analyze") {
                 val multipart = call.receiveMultipart()
                 var file: File? = null
-                var fileName: String? = null
+                var fileName: String?
 
                 multipart.forEachPart { part ->
                     if (part is PartData.FileItem) {
@@ -75,6 +79,14 @@ fun Application.configureRouting() {
                     // For now, we'll keep it in temp or delete after metadata extraction as per "Store temporarily"
                     // Requirement says "Store temporarily", so we won't delete immediately here if it's needed for next steps.
                 }
+            }
+        }
+
+        route("/narration") {
+            post("/prepare") {
+                val request = call.receive<PrepareNarrationRequest>()
+                val result = narrationService.prepareNarration(request.text, request.style)
+                call.respond(result)
             }
         }
     }

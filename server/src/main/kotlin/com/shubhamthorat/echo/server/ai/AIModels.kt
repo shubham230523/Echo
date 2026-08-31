@@ -14,8 +14,10 @@ data class DocumentStructureRequest(
 @Serializable
 data class DocumentStructureResponse(
     val title: String,
-    val summary: String,
-    val nodes: List<StructureNode>
+    val author: String? = null,
+    val type: String, // e.g., "BOOK", "ARTICLE", "PAPER"
+    val language: String,
+    val hierarchy: List<StructureNode>
 )
 
 @Serializable
@@ -32,7 +34,8 @@ data class StructureNode(
  */
 @Serializable
 data class ChapterDetectionRequest(
-    val fullText: String
+    val fullText: String,
+    val structure: DocumentStructureResponse? = null
 )
 
 @Serializable
@@ -43,8 +46,10 @@ data class ChapterDetectionResponse(
 @Serializable
 data class DetectedChapter(
     val title: String,
-    val content: String,
-    val index: Int
+    val index: Int,
+    val startIndex: Int,
+    val endIndex: Int,
+    val confidence: Float
 )
 
 /**
