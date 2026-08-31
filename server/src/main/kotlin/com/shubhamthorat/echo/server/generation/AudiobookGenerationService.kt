@@ -39,6 +39,7 @@ class AudiobookGenerationService(
                 chapters.forEachIndexed { index, chapter ->
                     updateJobStatus(jobId) { 
                         it.copy(
+                            currentStep = "Preparing narration",
                             currentChapterIndex = index + 1,
                             currentChapterTitle = chapter.title,
                             progress = index.toFloat() / chapters.size
@@ -48,6 +49,8 @@ class AudiobookGenerationService(
                     // 1. Prepare Narration
                     val prepared = narrationService.prepareNarration(chapter.originalText, "storytelling")
                     
+                    updateJobStatus(jobId) { it.copy(currentStep = "Generating audio") }
+
                     // 2. Generate Audio (sequential, uses lock in generationService)
                     val generationResult = generationService.generateChapterAudio(
                         chapterId = chapter.id,
@@ -61,11 +64,19 @@ class AudiobookGenerationService(
                     }
 
                     results.add(generationResult)
+                    
+                    updateJobStatus(jobId) { 
+                        it.copy(
+                            completedChapters = index + 1,
+                            progress = (index + 1).toFloat() / chapters.size
+                        ) 
+                    }
                 }
 
                 updateJobStatus(jobId) { 
                     it.copy(
                         status = "COMPLETED",
+                        currentStep = "Finished",
                         progress = 1.0f,
                         results = results
                     ) 
@@ -102,8 +113,10 @@ data class AudiobookJobStatus(
     val jobId: String,
     val documentId: String,
     val totalChapters: Int,
+    val completedChapters: Int = 0,
     val currentChapterIndex: Int = 0,
     val currentChapterTitle: String? = null,
+    val currentStep: String = "Initializing",
     val progress: Float = 0f,
     val status: String,
     val results: List<ChapterGenerationStatus> = emptyList(),

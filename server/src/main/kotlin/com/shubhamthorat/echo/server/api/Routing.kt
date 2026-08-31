@@ -156,8 +156,12 @@ fun Application.configureRouting(
                     generationId = status.jobId,
                     status = status.status,
                     progress = status.progress,
-                    message = status.currentChapterTitle ?: "Processing...",
-                    audiobookId = if (status.status == "COMPLETED") UUID.randomUUID().toString() else null // In real app, associate with final ID
+                    currentStep = status.currentStep,
+                    currentChapter = status.currentChapterTitle,
+                    completedChapters = status.completedChapters,
+                    totalChapters = status.totalChapters,
+                    error = status.errorMessage,
+                    audiobookId = if (status.status == "COMPLETED") UUID.randomUUID().toString() else null
                 ))
             }
         }

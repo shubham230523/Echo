@@ -131,7 +131,11 @@ data class GenerationStatusResponse(
     val generationId: String,
     val status: String,
     val progress: Float,
-    val message: String,
+    val currentStep: String,
+    val currentChapter: String? = null,
+    val completedChapters: Int,
+    val totalChapters: Int,
+    val error: String? = null,
     val audiobookId: String? = null
 )
 
