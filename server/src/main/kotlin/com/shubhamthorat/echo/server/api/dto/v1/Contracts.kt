@@ -23,9 +23,12 @@ data class AnalyzeDocumentRequest(
 
 @Serializable
 data class AnalyzeDocumentResponse(
-    val documentId: String,
-    val status: String,
-    val estimatedTimeSeconds: Int
+    val analysisId: String,
+    val fileName: String,
+    val pageCount: Int,
+    val totalCharacters: Int,
+    val totalWords: Int,
+    val status: String
 )
 
 // --- Chapter Detection ---
