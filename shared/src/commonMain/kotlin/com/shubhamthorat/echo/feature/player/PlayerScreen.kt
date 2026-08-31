@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,9 +17,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shubhamthorat.echo.domain.model.AudioChapter
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
 import com.shubhamthorat.echo.presentation.theme.EchoTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(
     uiState: PlayerUiState,
@@ -31,9 +33,11 @@ fun PlayerScreen(
     onSkipBackward: () -> Unit,
     onNextChapter: () -> Unit,
     onPreviousChapter: () -> Unit,
-    onChaptersClick: () -> Unit,
+    onChapterSelected: (AudioChapter) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showChapters by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             EchoTopBar(
@@ -197,7 +201,7 @@ fun PlayerScreen(
 
             // Bottom Actions
             OutlinedButton(
-                onClick = onChaptersClick,
+                onClick = { showChapters = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(EchoTheme.spacing.medium),
                 contentPadding = PaddingValues(vertical = EchoTheme.spacing.medium)
@@ -206,6 +210,23 @@ fun PlayerScreen(
                 Spacer(modifier = Modifier.width(EchoTheme.spacing.small))
                 Text("Chapters")
             }
+        }
+    }
+
+    if (showChapters) {
+        ModalBottomSheet(
+            onDismissRequest = { showChapters = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            ChapterQueueSheet(
+                chapters = uiState.chapters,
+                currentChapterId = uiState.currentChapter?.chapterId,
+                onChapterSelected = {
+                    onChapterSelected(it)
+                    showChapters = false
+                }
+            )
         }
     }
 }

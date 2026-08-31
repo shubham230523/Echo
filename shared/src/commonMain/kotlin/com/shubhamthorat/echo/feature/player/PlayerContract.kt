@@ -8,6 +8,7 @@ import com.shubhamthorat.echo.domain.model.AudioChapter
  *
  * @property audiobook The audiobook currently being played.
  * @property currentChapter The chapter currently being played.
+ * @property chapters The list of chapters in the audiobook.
  * @property currentPosition The current playback position in milliseconds.
  * @property duration The total duration of the current chapter in milliseconds.
  * @property isPlaying Whether audio is currently playing.
@@ -16,6 +17,7 @@ import com.shubhamthorat.echo.domain.model.AudioChapter
 data class PlayerUiState(
     val audiobook: Audiobook? = null,
     val currentChapter: AudioChapter? = null,
+    val chapters: List<AudioChapter> = emptyList(),
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
     val isPlaying: Boolean = false,

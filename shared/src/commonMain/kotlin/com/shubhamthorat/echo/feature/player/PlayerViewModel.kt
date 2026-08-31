@@ -46,10 +46,29 @@ class PlayerViewModel : ViewModel() {
             generationStatus = AudioGenerationStatus.COMPLETED
         )
 
+        val mockChapters = listOf(
+            mockChapter,
+            AudioChapter(
+                chapterId = "chapter_2",
+                audioPath = "path/to/audio2.mp3",
+                durationSeconds = 820.0,
+                fileSizeBytes = 1024L * 1024 * 7,
+                generationStatus = AudioGenerationStatus.COMPLETED
+            ),
+            AudioChapter(
+                chapterId = "chapter_3",
+                audioPath = "path/to/audio3.mp3",
+                durationSeconds = 450.0,
+                fileSizeBytes = 1024L * 1024 * 4,
+                generationStatus = AudioGenerationStatus.COMPLETED
+            )
+        )
+
         _uiState.update { 
             it.copy(
                 audiobook = mockAudiobook,
                 currentChapter = mockChapter,
+                chapters = mockChapters,
                 duration = 640000L, // 640 seconds in ms
                 currentPosition = 45000L // 45 seconds in ms
             )
@@ -101,7 +120,17 @@ class PlayerViewModel : ViewModel() {
             it.copy(
                 currentPosition = 0L,
                 duration = 640000L,
-                currentChapter = it.currentChapter?.copy(chapterId = "chapter_1", durationSeconds = 640.0)
+                currentChapter = it.chapters.firstOrNull() ?: it.currentChapter
+            )
+        }
+    }
+
+    fun selectChapter(chapter: AudioChapter) {
+        _uiState.update { 
+            it.copy(
+                currentChapter = chapter,
+                currentPosition = 0L,
+                duration = (chapter.durationSeconds * 1000).toLong()
             )
         }
     }

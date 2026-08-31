@@ -194,9 +194,7 @@ fun EchoNavHost(
                 onSkipBackward = viewModel::skipBackward,
                 onNextChapter = viewModel::nextChapter,
                 onPreviousChapter = viewModel::previousChapter,
-                onChaptersClick = {
-                    // TODO: Show chapters dialog or screen
-                }
+                onChapterSelected = viewModel::selectChapter
             )
         }
         composable<Route.Settings> {
