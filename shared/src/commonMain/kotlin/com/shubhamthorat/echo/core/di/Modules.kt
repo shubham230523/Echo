@@ -1,5 +1,10 @@
 package com.shubhamthorat.echo.core.di
 
+import io.ktor.client.HttpClient
+import com.shubhamthorat.echo.core.network.HttpClientFactory
+import com.shubhamthorat.echo.core.network.NetworkConfig
+import com.shubhamthorat.echo.data.remote.EchoApi
+import com.shubhamthorat.echo.data.remote.KtorEchoApi
 import com.shubhamthorat.echo.data.db.EchoDatabase
 import com.shubhamthorat.echo.data.db.getRoomDatabase
 import com.shubhamthorat.echo.data.repository.*
@@ -29,6 +34,12 @@ val coreModule = module {
     single { TestDependency() }
 }
 
+val networkModule = module {
+    single { NetworkConfig(baseUrl = "http://localhost:8080", isDebug = true) }
+    single<HttpClient> { HttpClientFactory(get(), get()).create() }
+    single<EchoApi> { KtorEchoApi(get()) }
+}
+
 val dataModule = module {
     single { getRoomDatabase(get()) }
     single { get<EchoDatabase>().documentDao() }
@@ -38,6 +49,7 @@ val dataModule = module {
     single<DocumentRepository> { RoomDocumentRepository(get()) }
     single<ChapterRepository> { RoomChapterRepository(get()) }
     single<AudiobookRepository> { RoomAudiobookRepository(get()) }
+    single<SystemRepository> { ApiSystemRepository(get()) }
 }
 
 val domainModule = module {
@@ -62,5 +74,5 @@ val featureModule = module {
 expect val platformModule: Module
 
 val appModule = module {
-    includes(coreModule, platformModule, dataModule, domainModule, featureModule)
+    includes(coreModule, platformModule, networkModule, dataModule, domainModule, featureModule)
 }
