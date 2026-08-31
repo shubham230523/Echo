@@ -9,6 +9,7 @@ import com.shubhamthorat.echo.domain.model.Document
 import com.shubhamthorat.echo.domain.model.DocumentStatus
 import com.shubhamthorat.echo.domain.model.ChapterDetectionRequest
 import com.shubhamthorat.echo.domain.repository.ChapterDetector
+import com.shubhamthorat.echo.domain.repository.ChapterRepository
 import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
 import com.shubhamthorat.echo.domain.repository.PdfProcessor
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
@@ -28,6 +29,7 @@ class DocumentAnalysisViewModel(
     private val pdfProcessor: PdfProcessor,
     private val cleanDocumentTextUseCase: CleanDocumentTextUseCase,
     private val chapterDetector: ChapterDetector,
+    private val chapterRepository: ChapterRepository,
     private val currentAnalysisRepository: CurrentAnalysisRepository
 ) : ViewModel() {
 
@@ -59,8 +61,9 @@ class DocumentAnalysisViewModel(
             }
 
             // Create a domain Document object for the processor
+            val documentId = file.path.hashCode().toString()
             val document = Document(
-                id = "temp_id",
+                id = documentId,
                 fileName = file.name,
                 filePath = file.path,
                 fileSizeBytes = file.sizeBytes ?: 0L,
@@ -94,6 +97,10 @@ class DocumentAnalysisViewModel(
 
                     when (detectionResult) {
                         is AppResult.Success -> {
+                            // Persist detected chapters
+                            chapterRepository.deleteChaptersByDocumentId(document.id)
+                            chapterRepository.insertChapters(detectionResult.data.chapters)
+
                             currentAnalysisRepository.setAnalysisResult(
                                 document = document,
                                 chapters = detectionResult.data.chapters

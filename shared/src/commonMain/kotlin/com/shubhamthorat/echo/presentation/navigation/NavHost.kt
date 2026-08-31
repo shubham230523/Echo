@@ -16,8 +16,9 @@ import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisScreen
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
-import com.shubhamthorat.echo.feature.library.LibraryMocks
+import com.shubhamthorat.echo.feature.import_document.ImportDocumentViewModel
 import com.shubhamthorat.echo.feature.library.LibraryScreen
+import com.shubhamthorat.echo.feature.library.LibraryViewModel
 import com.shubhamthorat.echo.feature.narration.NarrationScreen
 import com.shubhamthorat.echo.feature.narration.NarrationViewModel
 import com.shubhamthorat.echo.feature.voice.VoiceSelectionScreen
@@ -51,8 +52,11 @@ fun EchoNavHost(
         modifier = modifier
     ) {
         composable<Route.Library> {
+            val viewModel: LibraryViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
             LibraryScreen(
-                audiobooks = LibraryMocks.sampleAudiobooks,
+                uiState = uiState,
                 onCreateAudiobookClick = {
                     selectedFile = null
                     navController.navigate(Route.ImportDocument)
@@ -64,22 +68,37 @@ fun EchoNavHost(
                     if (audiobook.status == AudiobookStatus.READY) {
                         navController.navigate(Route.Player)
                     }
-                }
+                },
+                onRetryClick = viewModel::retry
             )
         }
         composable<Route.ImportDocument> {
+            val viewModel: ImportDocumentViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            LaunchedEffect(uiState.isSuccess) {
+                if (uiState.isSuccess) {
+                    navController.navigate(Route.DocumentAnalysis)
+                }
+            }
+
             ImportDocumentScreen(
+                uiState = uiState,
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onSelectFile = {
+                onSelectFileClick = {
                     filePicker.pickPdf()
                 },
                 onContinueClick = {
-                    navController.navigate(Route.DocumentAnalysis)
-                },
-                selectedFile = selectedFile
+                    viewModel.onContinue()
+                }
             )
+
+            // Sync picker results to ViewModel
+            LaunchedEffect(selectedFile) {
+                selectedFile?.let { viewModel.onFileSelected(it) }
+            }
         }
         composable<Route.DocumentAnalysis> {
             val viewModel: DocumentAnalysisViewModel = koinViewModel()

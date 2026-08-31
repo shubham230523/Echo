@@ -17,23 +17,15 @@ import com.shubhamthorat.echo.presentation.components.EchoOutlineButton
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
 import com.shubhamthorat.echo.presentation.theme.EchoTheme
 
-/**
- * Screen for importing documents to be converted into audiobooks.
- *
- * @param onBackClick Callback for navigation back.
- * @param onSelectFile Callback when the user triggers the file selection.
- * @param onContinueClick Callback when the user wants to proceed with the selected file.
- * @param selectedFile The currently selected file, if any.
- * @param modifier Modifier for the root layout.
- */
 @Composable
 fun ImportDocumentScreen(
+    uiState: ImportDocumentUiState,
     onBackClick: () -> Unit,
-    onSelectFile: () -> Unit,
+    onSelectFileClick: () -> Unit,
     onContinueClick: () -> Unit,
-    selectedFile: PlatformFile? = null,
     modifier: Modifier = Modifier
 ) {
+    val selectedFile = uiState.selectedFile
     val validationResult = remember(selectedFile) { validateSelectedFile(selectedFile) }
 
     Scaffold(
@@ -55,15 +47,24 @@ fun ImportDocumentScreen(
         ) {
             if (selectedFile == null) {
                 ImportIdleContent(
-                    onSelectFile = onSelectFile
+                    onSelectFile = onSelectFileClick
                 )
             } else {
                 FileSelectedContent(
                     file = selectedFile,
                     validationResult = validationResult,
-                    onReplaceFile = onSelectFile,
-                    onContinue = onContinueClick
+                    onReplaceFile = onSelectFileClick,
+                    onContinue = onContinueClick,
+                    isImporting = uiState.isImporting
                 )
+            }
+
+            if (uiState.error != null) {
+                Snackbar(
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    Text(uiState.error)
+                }
             }
         }
     }
@@ -130,7 +131,8 @@ private fun FileSelectedContent(
     file: PlatformFile,
     validationResult: FileValidationResult,
     onReplaceFile: () -> Unit,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    isImporting: Boolean
 ) {
     val isValid = validationResult is FileValidationResult.Valid
 
@@ -176,16 +178,25 @@ private fun FileSelectedContent(
 
         EchoButton(
             onClick = onContinue,
-            enabled = isValid,
+            enabled = isValid && !isImporting,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Continue")
+            if (isImporting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(text = "Continue")
+            }
         }
 
         Spacer(modifier = Modifier.height(EchoTheme.spacing.medium))
 
         EchoOutlineButton(
             onClick = onReplaceFile,
+            enabled = !isImporting,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Replace File")

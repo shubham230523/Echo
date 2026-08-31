@@ -21,10 +21,11 @@ import com.shubhamthorat.echo.presentation.theme.EchoTheme
 
 @Composable
 fun LibraryScreen(
-    audiobooks: List<Audiobook>,
+    uiState: LibraryUiState,
     onCreateAudiobookClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAudiobookClick: (Audiobook) -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -42,7 +43,7 @@ fun LibraryScreen(
             )
         },
         floatingActionButton = {
-            if (audiobooks.isNotEmpty()) {
+            if (uiState.audiobooks.isNotEmpty()) {
                 FloatingActionButton(
                     onClick = onCreateAudiobookClick,
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -55,30 +56,63 @@ fun LibraryScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        if (audiobooks.isEmpty()) {
-            LibraryEmptyContent(
-                paddingValues = paddingValues,
-                onCreateAudiobookClick = onCreateAudiobookClick
-            )
-        } else {
-            LibraryListContent(
-                paddingValues = paddingValues,
-                audiobooks = audiobooks,
-                onAudiobookClick = onAudiobookClick
-            )
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                uiState.error != null -> {
+                    LibraryErrorContent(
+                        message = uiState.error,
+                        onRetry = onRetryClick
+                    )
+                }
+                uiState.isEmpty -> {
+                    LibraryEmptyContent(
+                        onCreateAudiobookClick = onCreateAudiobookClick
+                    )
+                }
+                else -> {
+                    LibraryListContent(
+                        audiobooks = uiState.audiobooks,
+                        onAudiobookClick = onAudiobookClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryErrorContent(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(EchoTheme.spacing.medium),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(EchoTheme.spacing.medium))
+        Button(onClick = onRetry) {
+            Text("Retry")
         }
     }
 }
 
 @Composable
 private fun LibraryEmptyContent(
-    paddingValues: PaddingValues,
     onCreateAudiobookClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues)
             .padding(EchoTheme.spacing.medium),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -120,14 +154,11 @@ private fun LibraryEmptyContent(
 
 @Composable
 private fun LibraryListContent(
-    paddingValues: PaddingValues,
     audiobooks: List<Audiobook>,
     onAudiobookClick: (Audiobook) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(EchoTheme.spacing.medium),
         verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
     ) {

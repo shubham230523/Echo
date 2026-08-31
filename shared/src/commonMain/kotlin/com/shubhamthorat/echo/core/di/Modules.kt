@@ -6,6 +6,8 @@ import com.shubhamthorat.echo.data.repository.*
 import com.shubhamthorat.echo.domain.repository.*
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
+import com.shubhamthorat.echo.feature.import_document.ImportDocumentViewModel
+import com.shubhamthorat.echo.feature.library.LibraryViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import com.shubhamthorat.echo.feature.narration.NarrationViewModel
 import com.shubhamthorat.echo.feature.voice.VoiceSelectionViewModel
@@ -46,7 +48,9 @@ val domainModule = module {
 }
 
 val featureModule = module {
-    viewModel { DocumentAnalysisViewModel(get(), get(), get(), get()) }
+    viewModel { LibraryViewModel(get()) }
+    viewModel { ImportDocumentViewModel(get()) }
+    viewModel { DocumentAnalysisViewModel(get(), get(), get(), get(), get()) }
     viewModel { ChaptersViewModel(get()) }
     viewModel { NarrationViewModel(get()) }
     viewModel { VoiceSelectionViewModel() }
