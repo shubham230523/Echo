@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shubhamthorat.echo.domain.model.Voice
 import com.shubhamthorat.echo.domain.model.VoiceProvider
+import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,9 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel for managing voice selection.
  */
-class VoiceSelectionViewModel : ViewModel() {
+class VoiceSelectionViewModel(
+    private val currentAnalysisRepository: CurrentAnalysisRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VoiceSelectionUiState(isLoading = true))
     val uiState: StateFlow<VoiceSelectionUiState> = _uiState.asStateFlow()
@@ -78,6 +81,7 @@ class VoiceSelectionViewModel : ViewModel() {
 
     fun onVoiceSelected(voiceId: String) {
         _uiState.update { it.copy(selectedVoiceId = voiceId) }
+        currentAnalysisRepository.setVoiceId(voiceId)
     }
 
     fun onPreviewClick(voiceId: String) {

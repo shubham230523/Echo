@@ -2,6 +2,12 @@ package com.shubhamthorat.echo.feature.generation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shubhamthorat.echo.core.result.AppResult
+import com.shubhamthorat.echo.domain.model.*
+import com.shubhamthorat.echo.domain.repository.AudiobookRepository
+import com.shubhamthorat.echo.domain.repository.ChapterRepository
+import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
+import com.shubhamthorat.echo.domain.repository.RemoteGenerationRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,85 +15,145 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
 
 /**
- * ViewModel for managing the simulated audiobook generation process.
+ * ViewModel for managing the audiobook generation process via backend.
  */
-class GenerationViewModel : ViewModel() {
+class GenerationViewModel(
+    private val remoteRepository: RemoteGenerationRepository,
+    private val currentAnalysisRepository: CurrentAnalysisRepository,
+    private val audiobookRepository: AudiobookRepository,
+    private val chapterRepository: ChapterRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenerationUiState())
     val uiState: StateFlow<GenerationUiState> = _uiState.asStateFlow()
 
-    private var generationJob: Job? = null
+    private var pollingJob: Job? = null
 
     init {
-        startSimulatedGeneration()
+        startGeneration()
     }
 
-    private fun startSimulatedGeneration() {
-        generationJob?.cancel()
-        generationJob = viewModelScope.launch {
-            // Stage 1: Preparing Chapters
-            updateState(GenerationStatus.PREPARING_CHAPTERS, 0.05f, "Organizing document structure...")
-            delay(1500)
+    private fun startGeneration() {
+        val document = currentAnalysisRepository.currentDocument.value
+        val chapters = currentAnalysisRepository.chapters.value
+        val voiceId = currentAnalysisRepository.selectedVoiceId.value
+
+        if (document == null || chapters.isEmpty() || voiceId == null) {
+            _uiState.update { it.copy(status = GenerationStatus.ERROR, error = "Invalid generation context") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(status = GenerationStatus.PREPARING_CHAPTERS, message = "Starting generation...") }
             
-            // Stage 2: Preparing Narration
-            updateState(GenerationStatus.PREPARING_NARRATION, 0.15f, "Applying narration styles...")
-            delay(2000)
-            
-            // Stage 3: Generating Audio (simulating multiple chapters)
-            val chapters = listOf("Introduction", "Chapter 1: The Beginning", "Chapter 2: The Middle", "Chapter 3: The End")
-            chapters.forEachIndexed { index, chapterTitle ->
-                val baseProgress = 0.2f
-                val chapterProgress = (index.toFloat() / chapters.size) * 0.6f
-                
-                updateState(
-                    GenerationStatus.GENERATING_AUDIO, 
-                    baseProgress + chapterProgress, 
-                    "Converting text to speech...",
-                    chapterTitle
-                )
-                
-                // Simulate intra-chapter progress
-                repeat(5) { step ->
-                    delay(800)
-                    val stepProgress = (step + 1).toFloat() / 5 * (0.6f / chapters.size)
-                    _uiState.update { it.copy(progress = baseProgress + chapterProgress + stepProgress) }
+            val result = remoteRepository.startGeneration(
+                documentId = document.id,
+                voiceId = voiceId,
+                chapters = chapters,
+                speed = 1.0f
+            )
+
+            when (result) {
+                is AppResult.Success -> {
+                    startPolling(result.data)
                 }
-            }
-            
-            // Stage 4: Validating Audio
-            updateState(GenerationStatus.VALIDATING_AUDIO, 0.85f, "Checking audio quality and consistency...", null)
-            delay(2500)
-            
-            // Stage 5: Finalizing Audiobook
-            updateState(GenerationStatus.FINALIZING_AUDIOBOOK, 0.95f, "Packaging your audiobook...")
-            delay(1500)
-            
-            // Completed
-            _uiState.update { 
-                it.copy(
-                    status = GenerationStatus.COMPLETED,
-                    progress = 1.0f,
-                    message = "Audiobook is ready!"
-                ) 
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(status = GenerationStatus.ERROR, error = result.message) }
+                }
+                AppResult.Loading -> {}
             }
         }
     }
 
-    private fun updateState(status: GenerationStatus, progress: Float, message: String, chapter: String? = null) {
-        _uiState.update { 
-            it.copy(
-                status = status,
-                progress = progress,
-                message = message,
-                currentChapter = chapter
+    private fun startPolling(generationId: String) {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                val statusResult = remoteRepository.getGenerationStatus(generationId)
+                
+                when (statusResult) {
+                    is AppResult.Success -> {
+                        val progress = statusResult.data
+                        updateUiWithProgress(progress)
+
+                        if (progress.status == "COMPLETED") {
+                            saveFinalAudiobook(progress.audiobookId ?: generationId)
+                            _uiState.update { 
+                                it.copy(
+                                    status = GenerationStatus.COMPLETED,
+                                    progress = 1.0f,
+                                    message = "Audiobook is ready!"
+                                ) 
+                            }
+                            break
+                        } else if (progress.status == "FAILED") {
+                            _uiState.update { 
+                                it.copy(
+                                    status = GenerationStatus.ERROR, 
+                                    error = progress.error ?: "Generation failed" 
+                                ) 
+                            }
+                            break
+                        }
+                    }
+                    is AppResult.Error -> {
+                        _uiState.update { it.copy(error = statusResult.message) }
+                    }
+                    AppResult.Loading -> {}
+                }
+                
+                delay(3000) // Poll every 3 seconds
+            }
+        }
+    }
+
+    private fun saveFinalAudiobook(audiobookId: String) {
+        val document = currentAnalysisRepository.currentDocument.value ?: return
+        
+        viewModelScope.launch {
+            audiobookRepository.insertAudiobook(
+                Audiobook(
+                    id = audiobookId,
+                    documentId = document.id,
+                    title = document.fileName.removeSuffix(".pdf"),
+                    author = "AI Narrator",
+                    coverImagePath = null,
+                    totalDurationSeconds = 0, // Should be sum of chapters
+                    chapterCount = currentAnalysisRepository.chapters.value.size,
+                    createdAt = Instant.fromEpochMilliseconds(0),
+                    updatedAt = Instant.fromEpochMilliseconds(0),
+                    status = AudiobookStatus.READY
+                )
             )
         }
     }
 
+    private fun updateUiWithProgress(progress: GenerationProgress) {
+        _uiState.update { 
+            it.copy(
+                status = mapBackendStatus(progress.status),
+                progress = progress.progress,
+                message = "${progress.currentStep}: ${progress.currentChapter ?: ""}",
+                currentChapter = progress.currentChapter
+            )
+        }
+    }
+
+    private fun mapBackendStatus(status: String): GenerationStatus {
+        return when (status) {
+            "PENDING" -> GenerationStatus.IDLE
+            "PROCESSING" -> GenerationStatus.GENERATING_AUDIO
+            "COMPLETED" -> GenerationStatus.COMPLETED
+            "FAILED" -> GenerationStatus.ERROR
+            else -> GenerationStatus.IDLE
+        }
+    }
+
     fun cancelGeneration() {
-        generationJob?.cancel()
+        pollingJob?.cancel()
         _uiState.update { 
             it.copy(
                 status = GenerationStatus.CANCELLED,
@@ -98,6 +164,11 @@ class GenerationViewModel : ViewModel() {
     
     fun retry() {
         _uiState.update { GenerationUiState() }
-        startSimulatedGeneration()
+        startGeneration()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
     }
 }

@@ -66,8 +66,8 @@ val featureModule = module {
     viewModel { DocumentAnalysisViewModel(get(), get(), get(), get(), get()) }
     viewModel { ChaptersViewModel(get()) }
     viewModel { NarrationViewModel(get()) }
-    viewModel { VoiceSelectionViewModel() }
-    viewModel { GenerationViewModel() }
+    viewModel { VoiceSelectionViewModel(get()) }
+    viewModel { GenerationViewModel(get(), get(), get(), get()) }
     viewModel { PlayerViewModel() }
     viewModel { SettingsViewModel() }
 }
