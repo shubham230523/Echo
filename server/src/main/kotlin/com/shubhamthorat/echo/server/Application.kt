@@ -16,6 +16,7 @@ import com.shubhamthorat.echo.server.ai.AIProviderFactory
 import com.shubhamthorat.echo.server.ai.DialogueService
 import com.shubhamthorat.echo.server.ai.PronunciationService
 import com.shubhamthorat.echo.server.voice.MockVoiceProvider
+import com.shubhamthorat.echo.server.voice.TTSProviderFactory
 import com.shubhamthorat.echo.server.voice.VoiceService
 
 fun main() {
@@ -31,6 +32,7 @@ fun Application.module() {
     }
     
     val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
+    val ttsProvider = TTSProviderFactory(httpClient, Config.tts).create()
     val dialogueService = DialogueService(aiProvider)
     val pronunciationService = PronunciationService(aiProvider)
     val voiceService = VoiceService(MockVoiceProvider())
@@ -38,5 +40,5 @@ fun Application.module() {
     configureLogging()
     configureSerialization()
     configureStatusPages()
-    configureRouting(aiProvider, dialogueService, voiceService, pronunciationService)
+    configureRouting(aiProvider, dialogueService, voiceService, pronunciationService, ttsProvider)
 }

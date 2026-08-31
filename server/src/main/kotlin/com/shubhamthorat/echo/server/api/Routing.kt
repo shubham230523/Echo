@@ -8,6 +8,8 @@ import com.shubhamthorat.echo.server.api.dto.v1.PrepareNarrationRequest
 import com.shubhamthorat.echo.server.document.DocumentService
 import com.shubhamthorat.echo.server.narration.NarrationService
 import com.shubhamthorat.echo.server.voice.VoiceService
+import com.shubhamthorat.echo.server.voice.TTSProvider
+import com.shubhamthorat.echo.server.voice.TTSRequest
 import com.shubhamthorat.echo.server.api.dto.v1.GetVoicesResponse
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -23,7 +25,8 @@ fun Application.configureRouting(
     aiProvider: AIProvider,
     dialogueService: DialogueService,
     voiceService: VoiceService,
-    pronunciationService: PronunciationService
+    pronunciationService: PronunciationService,
+    ttsProvider: TTSProvider
 ) {
     val documentService = DocumentService(aiProvider)
     val narrationService = NarrationService(aiProvider)
@@ -127,6 +130,12 @@ fun Application.configureRouting(
                     )
                 }
             ))
+        }
+
+        post("/tts/synthesize") {
+            val request = call.receive<TTSRequest>()
+            val result = ttsProvider.synthesize(request)
+            call.respond(result)
         }
     }
 }
