@@ -27,6 +27,8 @@ import com.shubhamthorat.echo.feature.voice.VoiceSelectionScreen
 import com.shubhamthorat.echo.feature.voice.VoiceSelectionViewModel
 import com.shubhamthorat.echo.feature.generation.GenerationScreen
 import com.shubhamthorat.echo.feature.generation.GenerationViewModel
+import com.shubhamthorat.echo.feature.player.PlayerScreen
+import com.shubhamthorat.echo.feature.player.PlayerViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -177,7 +179,24 @@ fun EchoNavHost(
             )
         }
         composable<Route.Player> {
-            PlaceholderScreen("Player")
+            val viewModel: PlayerViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            PlayerScreen(
+                uiState = uiState,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onTogglePlayPause = viewModel::togglePlayPause,
+                onSeek = viewModel::seekTo,
+                onSkipForward = viewModel::skipForward,
+                onSkipBackward = viewModel::skipBackward,
+                onNextChapter = viewModel::nextChapter,
+                onPreviousChapter = viewModel::previousChapter,
+                onChaptersClick = {
+                    // TODO: Show chapters dialog or screen
+                }
+            )
         }
         composable<Route.Settings> {
             PlaceholderScreen("Settings")
