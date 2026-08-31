@@ -26,6 +26,7 @@ material3 = "1.11.0-alpha07"
 navigation-compose = "2.9.2"
 pdfbox = "3.0.8"
 jaudiotagger = "3.0.1"
+androidx-media3 = "1.6.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -77,6 +78,9 @@ ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "kto
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
+androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "androidx-media3" }
+androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "androidx-media3" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -82,6 +82,9 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.itext.core)
             implementation(libs.ktor.client.cio)
+            implementation(libs.androidx.media3.exoplayer)
+            implementation(libs.androidx.media3.session)
+            implementation(libs.androidx.media3.common)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
