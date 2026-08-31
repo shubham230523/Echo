@@ -1,10 +1,7 @@
 package com.shubhamthorat.echo.presentation.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
@@ -29,6 +26,8 @@ import com.shubhamthorat.echo.feature.generation.GenerationScreen
 import com.shubhamthorat.echo.feature.generation.GenerationViewModel
 import com.shubhamthorat.echo.feature.player.PlayerScreen
 import com.shubhamthorat.echo.feature.player.PlayerViewModel
+import com.shubhamthorat.echo.feature.settings.SettingsScreen
+import com.shubhamthorat.echo.feature.settings.SettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -199,17 +198,20 @@ fun EchoNavHost(
             )
         }
         composable<Route.Settings> {
-            PlaceholderScreen("Settings")
-        }
-    }
-}
+            val viewModel: SettingsViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
 
-@Composable
-private fun PlaceholderScreen(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Screen: $name")
+            SettingsScreen(
+                uiState = uiState,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onThemeClick = {
+                    // TODO: Show theme selection dialog
+                },
+                onSpeedSelected = viewModel::setDefaultPlaybackSpeed,
+                onClearCacheClick = viewModel::clearCache
+            )
+        }
     }
 }
