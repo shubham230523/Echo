@@ -21,6 +21,10 @@ import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewMode
 import com.shubhamthorat.echo.feature.import_document.ImportDocumentScreen
 import com.shubhamthorat.echo.feature.library.LibraryMocks
 import com.shubhamthorat.echo.feature.library.LibraryScreen
+import com.shubhamthorat.echo.feature.narration.NarrationScreen
+import com.shubhamthorat.echo.feature.narration.NarrationViewModel
+import com.shubhamthorat.echo.feature.voice.VoiceSelectionScreen
+import com.shubhamthorat.echo.feature.voice.VoiceSelectionViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -122,10 +126,35 @@ fun EchoNavHost(
             )
         }
         composable<Route.Narration> {
-            PlaceholderScreen("Narration")
+            val viewModel: NarrationViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+            
+            NarrationScreen(
+                uiState = uiState,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onContinueClick = {
+                    navController.navigate(Route.VoiceSelection)
+                },
+                onChapterSelected = viewModel::onChapterSelected,
+                onRegenerateClick = viewModel::onRegenerateClick
+            )
         }
         composable<Route.VoiceSelection> {
-            PlaceholderScreen("Voice Selection")
+            val viewModel: VoiceSelectionViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+            
+            VoiceSelectionScreen(
+                uiState = uiState,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onContinueClick = {
+                    navController.navigate(Route.Generation)
+                },
+                onVoiceSelect = viewModel::onVoiceSelected
+            )
         }
         composable<Route.Generation> {
             PlaceholderScreen("Generation")

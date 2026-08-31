@@ -49,6 +49,7 @@ class ChaptersViewModel(
             chapters = updatedChapters,
             editingChapter = null
         )
+        currentAnalysisRepository.updateChapters(updatedChapters)
     }
 
     fun toggleChapterSelection(chapterId: String) {
@@ -114,6 +115,7 @@ class ChaptersViewModel(
             selectedChapterIds = emptySet(),
             error = null
         )
+        currentAnalysisRepository.updateChapters(reIndexedChapters)
     }
 
     private fun observeAnalysisResult() {

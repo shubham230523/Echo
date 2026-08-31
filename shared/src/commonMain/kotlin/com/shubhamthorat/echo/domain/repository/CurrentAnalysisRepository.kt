@@ -23,6 +23,10 @@ class CurrentAnalysisRepository {
         _chapters.value = chapters
     }
 
+    fun updateChapters(chapters: List<Chapter>) {
+        _chapters.value = chapters
+    }
+
     fun clear() {
         _currentDocument.value = null
         _chapters.value = emptyList()

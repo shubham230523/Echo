@@ -8,6 +8,8 @@ import com.shubhamthorat.echo.domain.repository.NarrationProcessor
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
+import com.shubhamthorat.echo.feature.narration.NarrationViewModel
+import com.shubhamthorat.echo.feature.voice.VoiceSelectionViewModel
 import org.koin.compose.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -33,6 +35,8 @@ val domainModule = module {
 val featureModule = module {
     viewModel { DocumentAnalysisViewModel(get(), get(), get(), get()) }
     viewModel { ChaptersViewModel(get()) }
+    viewModel { NarrationViewModel(get()) }
+    viewModel { VoiceSelectionViewModel() }
 }
 
 expect val platformModule: Module
