@@ -25,6 +25,8 @@ import com.shubhamthorat.echo.feature.narration.NarrationScreen
 import com.shubhamthorat.echo.feature.narration.NarrationViewModel
 import com.shubhamthorat.echo.feature.voice.VoiceSelectionScreen
 import com.shubhamthorat.echo.feature.voice.VoiceSelectionViewModel
+import com.shubhamthorat.echo.feature.generation.GenerationScreen
+import com.shubhamthorat.echo.feature.generation.GenerationViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -158,7 +160,21 @@ fun EchoNavHost(
             )
         }
         composable<Route.Generation> {
-            PlaceholderScreen("Generation")
+            val viewModel: GenerationViewModel = koinViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            GenerationScreen(
+                uiState = uiState,
+                onCancelClick = {
+                    viewModel.cancelGeneration()
+                    navController.popBackStack()
+                },
+                onFinishClick = {
+                    navController.navigate(Route.Library) {
+                        popUpTo(Route.Library) { inclusive = true }
+                    }
+                }
+            )
         }
         composable<Route.Player> {
             PlaceholderScreen("Player")

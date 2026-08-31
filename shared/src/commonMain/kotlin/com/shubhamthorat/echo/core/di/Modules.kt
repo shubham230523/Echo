@@ -10,6 +10,7 @@ import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
 import com.shubhamthorat.echo.feature.narration.NarrationViewModel
 import com.shubhamthorat.echo.feature.voice.VoiceSelectionViewModel
+import com.shubhamthorat.echo.feature.generation.GenerationViewModel
 import org.koin.compose.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -37,6 +38,7 @@ val featureModule = module {
     viewModel { ChaptersViewModel(get()) }
     viewModel { NarrationViewModel(get()) }
     viewModel { VoiceSelectionViewModel() }
+    viewModel { GenerationViewModel() }
 }
 
 expect val platformModule: Module
