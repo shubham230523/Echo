@@ -43,7 +43,7 @@ fun VoiceSelectionScreen(
                     .padding(EchoTheme.spacing.medium)
                     .height(56.dp),
                 shape = RoundedCornerShape(EchoTheme.spacing.medium),
-                enabled = uiState.selectedVoiceId != null
+                enabled = uiState.isContinueEnabled
             ) {
                 Text(
                     text = "Continue to Generation",

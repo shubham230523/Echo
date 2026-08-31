@@ -15,4 +15,7 @@ data class VoiceSelectionUiState(
     val selectedVoiceId: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null
-)
+) {
+    val selectedVoice: Voice? = voices.find { it.id == selectedVoiceId }
+    val isContinueEnabled: Boolean = selectedVoiceId != null
+}

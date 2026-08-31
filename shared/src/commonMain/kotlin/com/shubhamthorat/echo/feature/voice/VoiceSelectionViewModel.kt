@@ -67,7 +67,7 @@ class VoiceSelectionViewModel : ViewModel() {
         _uiState.update { 
             it.copy(
                 voices = mockVoices,
-                selectedVoiceId = mockVoices.firstOrNull()?.id,
+                selectedVoiceId = null, // Ensure no auto-selection for MVP validation
                 isLoading = false
             )
         }
