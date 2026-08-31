@@ -28,11 +28,11 @@ class GenerationViewModel : ViewModel() {
         generationJob?.cancel()
         generationJob = viewModelScope.launch {
             // Stage 1: Preparing Chapters
-            updateStage(GenerationStage.PREPARING_CHAPTERS, 0.05f)
+            updateState(GenerationStatus.PREPARING_CHAPTERS, 0.05f, "Organizing document structure...")
             delay(1500)
             
             // Stage 2: Preparing Narration
-            updateStage(GenerationStage.PREPARING_NARRATION, 0.15f)
+            updateState(GenerationStatus.PREPARING_NARRATION, 0.15f, "Applying narration styles...")
             delay(2000)
             
             // Stage 3: Generating Audio (simulating multiple chapters)
@@ -41,7 +41,12 @@ class GenerationViewModel : ViewModel() {
                 val baseProgress = 0.2f
                 val chapterProgress = (index.toFloat() / chapters.size) * 0.6f
                 
-                updateStage(GenerationStage.GENERATING_AUDIO, baseProgress + chapterProgress, chapterTitle)
+                updateState(
+                    GenerationStatus.GENERATING_AUDIO, 
+                    baseProgress + chapterProgress, 
+                    "Converting text to speech...",
+                    chapterTitle
+                )
                 
                 // Simulate intra-chapter progress
                 repeat(5) { step ->
@@ -52,23 +57,30 @@ class GenerationViewModel : ViewModel() {
             }
             
             // Stage 4: Validating Audio
-            updateStage(GenerationStage.VALIDATING_AUDIO, 0.85f, null)
+            updateState(GenerationStatus.VALIDATING_AUDIO, 0.85f, "Checking audio quality and consistency...", null)
             delay(2500)
             
             // Stage 5: Finalizing Audiobook
-            updateStage(GenerationStage.FINALIZING_AUDIOBOOK, 0.95f)
+            updateState(GenerationStatus.FINALIZING_AUDIOBOOK, 0.95f, "Packaging your audiobook...")
             delay(1500)
             
             // Completed
-            _uiState.update { it.copy(progress = 1.0f, isCompleted = true) }
+            _uiState.update { 
+                it.copy(
+                    status = GenerationStatus.COMPLETED,
+                    progress = 1.0f,
+                    message = "Audiobook is ready!"
+                ) 
+            }
         }
     }
 
-    private fun updateStage(stage: GenerationStage, progress: Float, chapter: String? = null) {
+    private fun updateState(status: GenerationStatus, progress: Float, message: String, chapter: String? = null) {
         _uiState.update { 
             it.copy(
-                currentStage = stage,
+                status = status,
                 progress = progress,
+                message = message,
                 currentChapter = chapter
             )
         }
@@ -76,7 +88,12 @@ class GenerationViewModel : ViewModel() {
 
     fun cancelGeneration() {
         generationJob?.cancel()
-        _uiState.update { it.copy(isCancelled = true) }
+        _uiState.update { 
+            it.copy(
+                status = GenerationStatus.CANCELLED,
+                message = "Generation cancelled."
+            ) 
+        }
     }
     
     fun retry() {

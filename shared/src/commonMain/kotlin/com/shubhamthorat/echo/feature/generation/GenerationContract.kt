@@ -1,31 +1,37 @@
 package com.shubhamthorat.echo.feature.generation
 
 /**
- * Stages of the audiobook generation pipeline.
+ * Status of the audiobook generation process.
  */
-enum class GenerationStage(val displayName: String) {
-    PREPARING_CHAPTERS("Preparing chapters"),
-    PREPARING_NARRATION("Preparing narration"),
-    GENERATING_AUDIO("Generating Audio"),
-    VALIDATING_AUDIO("Validating Audio"),
-    FINALIZING_AUDIOBOOK("Finalizing Audiobook")
+enum class GenerationStatus {
+    IDLE,
+    PREPARING_CHAPTERS,
+    PREPARING_NARRATION,
+    GENERATING_AUDIO,
+    VALIDATING_AUDIO,
+    FINALIZING_AUDIOBOOK,
+    COMPLETED,
+    CANCELLED,
+    ERROR
 }
 
 /**
  * UI State for the Audiobook Generation screen.
  *
- * @property currentStage The current stage in the generation pipeline.
+ * @property status The current status in the generation pipeline.
  * @property progress Overall progress as a float between 0.0 and 1.0.
  * @property currentChapter The name of the chapter currently being processed.
- * @property isCompleted Whether the generation process is finished.
- * @property isCancelled Whether the generation process was cancelled.
+ * @property message A descriptive message for the current status.
+ * @property error Optional error message if generation fails.
  */
 data class GenerationUiState(
-    val currentStage: GenerationStage = GenerationStage.PREPARING_CHAPTERS,
+    val status: GenerationStatus = GenerationStatus.IDLE,
     val progress: Float = 0f,
     val currentChapter: String? = null,
-    val isCompleted: Boolean = false,
-    val isCancelled: Boolean = false
+    val message: String = "",
+    val error: String? = null
 ) {
     val progressPercentage: Int = (progress * 100).toInt()
+    val isCompleted: Boolean = status == GenerationStatus.COMPLETED
+    val isCancelled: Boolean = status == GenerationStatus.CANCELLED
 }
