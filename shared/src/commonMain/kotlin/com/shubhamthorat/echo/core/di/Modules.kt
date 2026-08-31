@@ -1,10 +1,9 @@
 package com.shubhamthorat.echo.core.di
 
-import com.shubhamthorat.echo.data.repository.DefaultNarrationProcessor
-import com.shubhamthorat.echo.data.repository.RuleBasedChapterDetector
-import com.shubhamthorat.echo.domain.repository.ChapterDetector
-import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
-import com.shubhamthorat.echo.domain.repository.NarrationProcessor
+import com.shubhamthorat.echo.data.db.EchoDatabase
+import com.shubhamthorat.echo.data.db.getRoomDatabase
+import com.shubhamthorat.echo.data.repository.*
+import com.shubhamthorat.echo.domain.repository.*
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import com.shubhamthorat.echo.feature.chapters.ChaptersViewModel
 import com.shubhamthorat.echo.feature.document_analysis.DocumentAnalysisViewModel
@@ -28,6 +27,17 @@ val coreModule = module {
     single { TestDependency() }
 }
 
+val dataModule = module {
+    single { getRoomDatabase(get()) }
+    single { get<EchoDatabase>().documentDao() }
+    single { get<EchoDatabase>().chapterDao() }
+    single { get<EchoDatabase>().audiobookDao() }
+    
+    single<DocumentRepository> { RoomDocumentRepository(get()) }
+    single<ChapterRepository> { RoomChapterRepository(get()) }
+    single<AudiobookRepository> { RoomAudiobookRepository(get()) }
+}
+
 val domainModule = module {
     factory { CleanDocumentTextUseCase() }
     factory<ChapterDetector> { RuleBasedChapterDetector() }
@@ -48,5 +58,5 @@ val featureModule = module {
 expect val platformModule: Module
 
 val appModule = module {
-    includes(coreModule, platformModule, domainModule, featureModule)
+    includes(coreModule, platformModule, dataModule, domainModule, featureModule)
 }
