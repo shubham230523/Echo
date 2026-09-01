@@ -13,6 +13,7 @@ class TTSProviderFactory(
     fun create(): TTSProvider {
         return when (config.providerType) {
             TTSProviderType.OPENAI -> OpenAITTSProvider(client, config)
+            TTSProviderType.OPENROUTER -> OpenRouterTTSProvider(client, config)
             TTSProviderType.MOCK -> MockTTSProvider()
             else -> throw UnsupportedOperationException("TTS Provider ${config.providerType} not implemented yet")
         }

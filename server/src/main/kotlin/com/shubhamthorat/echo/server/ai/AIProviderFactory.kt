@@ -15,6 +15,7 @@ class AIProviderFactory(
             AIProviderType.GEMINI -> OpenAICompatibleAIProvider(client, config) // Placeholder if using compatible endpoint
             AIProviderType.OLLAMA -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OPENAI_COMPATIBLE -> OpenAICompatibleAIProvider(client, config)
+            AIProviderType.OPENROUTER -> OpenRouterAIProvider(client, config)
             AIProviderType.MOCK -> MockAIProvider()
         }
     }

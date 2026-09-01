@@ -16,38 +16,42 @@ room {
 }
 
 kotlin {
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "Shared"
-            isStatic = true
+    val isDesktopOnly = project.hasProperty("desktopOnly")
+
+    if (!isDesktopOnly) {
+        listOf(
+            iosArm64(),
+            iosSimulatorArm64()
+        ).forEach { iosTarget ->
+            iosTarget.binaries.framework {
+                baseName = "Shared"
+                isStatic = true
+            }
+        }
+        
+        android {
+           namespace = "com.shubhamthorat.echo.shared"
+           compileSdk = libs.versions.android.compileSdk.get().toInt()
+           minSdk = libs.versions.android.minSdk.get().toInt()
+        
+           compilerOptions {
+               jvmTarget = JvmTarget.JVM_11
+           }
+           androidResources {
+               enable = true
+           }
+           withHostTest {
+               isIncludeAndroidResources = true
+           }
+           withDeviceTestBuilder {
+               sourceSetTreeName = "test"
+           }.configure {
+               instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+           }
         }
     }
     
     jvm()
-    
-    android {
-       namespace = "com.shubhamthorat.echo.shared"
-       compileSdk = libs.versions.android.compileSdk.get().toInt()
-       minSdk = libs.versions.android.minSdk.get().toInt()
-    
-       compilerOptions {
-           jvmTarget = JvmTarget.JVM_11
-       }
-       androidResources {
-           enable = true
-       }
-       withHostTest {
-           isIncludeAndroidResources = true
-       }
-       withDeviceTestBuilder {
-           sourceSetTreeName = "test"
-       }.configure {
-           instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-       }
-    }
     
     sourceSets {
         commonMain.dependencies {
@@ -96,14 +100,17 @@ kotlin {
                 implementation(libs.ktor.client.cio)
             }
         }
-        val iosMain by creating {
-            dependsOn(commonMain.get())
-            dependencies {
-                implementation(libs.ktor.client.darwin)
+        
+        if (!isDesktopOnly) {
+            val iosMain by creating {
+                dependsOn(commonMain.get())
+                dependencies {
+                    implementation(libs.ktor.client.darwin)
+                }
             }
+            iosArm64Main.get().dependsOn(iosMain)
+            iosSimulatorArm64Main.get().dependsOn(iosMain)
         }
-        iosArm64Main.get().dependsOn(iosMain)
-        iosSimulatorArm64Main.get().dependsOn(iosMain)
     }
 }
 

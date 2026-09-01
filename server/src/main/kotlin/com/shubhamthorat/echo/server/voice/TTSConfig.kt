@@ -7,6 +7,7 @@ enum class TTSProviderType {
     OPENAI,
     GOOGLE,
     ELEVENLABS,
+    OPENROUTER,
     MOCK
 }
 
@@ -21,20 +22,23 @@ data class TTSConfig(
 ) {
     companion object {
         fun fromEnvironment(): TTSConfig {
-            val typeStr = System.getenv("TTS_PROVIDER") ?: "MOCK"
+            val typeStr = System.getenv("TTS_PROVIDER") ?: "OPENROUTER"
             val type = try {
                 TTSProviderType.valueOf(typeStr.uppercase())
             } catch (e: Exception) {
-                TTSProviderType.MOCK
+                TTSProviderType.OPENROUTER
             }
+
+            val apiKey = System.getenv("TTS_API_KEY")
 
             return TTSConfig(
                 providerType = type,
-                apiKey = System.getenv("TTS_API_KEY"),
+                apiKey = apiKey,
                 baseUrl = System.getenv("TTS_BASE_URL"),
                 voiceModel = System.getenv("TTS_MODEL_NAME") ?: when (type) {
                     TTSProviderType.OPENAI -> "tts-1"
                     TTSProviderType.ELEVENLABS -> "eleven_monolingual_v1"
+                    TTSProviderType.OPENROUTER -> "deepgram/flux-tts:free"
                     else -> "default"
                 }
             )
