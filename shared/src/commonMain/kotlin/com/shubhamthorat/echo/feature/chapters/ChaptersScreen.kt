@@ -53,18 +53,25 @@ fun ChaptersScreen(
             )
         },
         bottomBar = {
-            Button(
-                onClick = onContinueClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(EchoTheme.spacing.medium)
-                    .height(56.dp),
-                shape = RoundedCornerShape(EchoTheme.spacing.medium)
+            Surface(
+                tonalElevation = 3.dp,
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
             ) {
-                Text(
-                    text = "Continue to Narration",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Button(
+                    onClick = onContinueClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(EchoTheme.spacing.medium)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(EchoTheme.spacing.medium)
+                ) {
+                    Text(
+                        text = "Continue to Narration",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
         },
         modifier = modifier.fillMaxSize(),

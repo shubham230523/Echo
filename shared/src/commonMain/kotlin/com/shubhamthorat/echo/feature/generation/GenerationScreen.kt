@@ -33,6 +33,7 @@ fun GenerationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(EchoTheme.spacing.large),
             contentAlignment = Alignment.Center
         ) {

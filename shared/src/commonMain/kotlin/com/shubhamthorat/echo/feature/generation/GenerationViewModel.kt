@@ -71,7 +71,10 @@ class GenerationViewModel(
     private fun startPolling(generationId: String) {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
-            while (true) {
+            var pollingCount = 0
+            val maxPolling = 100 // Prevent infinite loop (approx 5 mins)
+            
+            while (pollingCount < maxPolling) {
                 val statusResult = remoteRepository.getGenerationStatus(generationId)
                 
                 when (statusResult) {
@@ -100,12 +103,20 @@ class GenerationViewModel(
                         }
                     }
                     is AppResult.Error -> {
-                        _uiState.update { it.copy(error = statusResult.message) }
+                        // Retry polling on network error unless too many failures
+                        if (pollingCount % 5 == 0) {
+                            _uiState.update { it.copy(message = "Connection issue, retrying...") }
+                        }
                     }
                     AppResult.Loading -> {}
                 }
                 
+                pollingCount++
                 delay(3000) // Poll every 3 seconds
+            }
+            
+            if (pollingCount >= maxPolling) {
+                _uiState.update { it.copy(status = GenerationStatus.ERROR, error = "Generation timed out. Please try again.") }
             }
         }
     }
