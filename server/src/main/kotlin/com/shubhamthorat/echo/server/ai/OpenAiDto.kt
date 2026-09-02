@@ -1,6 +1,7 @@
 package com.shubhamthorat.echo.server.ai
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class OpenAIRequest(
@@ -18,7 +19,7 @@ data class ReasoningConfig(
 data class OpenAiMessage(
     val role: String,
     val content: String,
-    val reasoning_details: String? = null
+    val reasoning_details: JsonElement? = null
 )
 
 @Serializable
