@@ -36,7 +36,8 @@ class OpenRouterAIProvider(
             contentType(ContentType.Application.Json)
             setBody(OpenAIRequest(
                 model = config.modelName,
-                messages = listOf(OpenAiMessage("user", prompt))
+                messages = listOf(OpenAiMessage("user", prompt)),
+                reasoning = ReasoningConfig(enabled = true)
             ))
         }
 

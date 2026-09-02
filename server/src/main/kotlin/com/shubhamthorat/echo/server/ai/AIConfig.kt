@@ -39,7 +39,7 @@ data class AIConfig(
                     AIProviderType.GEMINI -> "gemini-1.5-pro"
                     AIProviderType.OLLAMA -> "llama3"
                     AIProviderType.OPENAI_COMPATIBLE -> "gpt-4o"
-                    AIProviderType.OPENROUTER -> "minimax/minimax-m3:free"
+                    AIProviderType.OPENROUTER -> "thinkingmachines/inkling:free"
                     AIProviderType.MOCK -> "mock-model"
                 }
             )
