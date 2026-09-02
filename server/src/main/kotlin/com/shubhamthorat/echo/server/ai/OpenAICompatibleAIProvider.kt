@@ -28,16 +28,23 @@ class OpenAICompatibleAIProvider(
     }
 
     private suspend fun callAi(prompt: String): String {
-        val response: OpenAIResponse = client.post(config.baseUrl ?: "https://api.openai.com/v1/chat/completions") {
+        val response = client.post(config.baseUrl ?: "https://api.openai.com/v1/chat/completions") {
             header(HttpHeaders.Authorization, "Bearer ${config.apiKey}")
             contentType(ContentType.Application.Json)
             setBody(OpenAIRequest(
                 model = config.modelName,
                 messages = listOf(OpenAiMessage("user", prompt))
             ))
-        }.body()
+        }
 
-        return response.choices.firstOrNull()?.message?.content 
+        if (!response.status.isSuccess()) {
+            val errorBody = try { response.body<String>() } catch (e: Exception) { "Empty error body" }
+            throw AIProviderException.ServiceUnavailable("AI provider failed with status ${response.status}: $errorBody")
+        }
+
+        val responseBody = response.body<String>()
+        val openAiResponse = JsonExtractor.json.decodeFromString<OpenAIResponse>(responseBody)
+        return openAiResponse.choices.firstOrNull()?.message?.content 
             ?: throw AIProviderException.ServiceUnavailable("AI provider returned empty response")
     }
 

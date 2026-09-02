@@ -21,21 +21,21 @@ data class TTSConfig(
     val voiceModel: String
 ) {
     companion object {
-        fun fromEnvironment(): TTSConfig {
-            val typeStr = System.getenv("TTS_PROVIDER") ?: "OPENROUTER"
+        fun fromEnvironment(getProperty: (String) -> String? = { System.getenv(it) }): TTSConfig {
+            val typeStr = getProperty("TTS_PROVIDER") ?: "OPENROUTER"
             val type = try {
                 TTSProviderType.valueOf(typeStr.uppercase())
             } catch (e: Exception) {
                 TTSProviderType.OPENROUTER
             }
 
-            val apiKey = System.getenv("TTS_API_KEY")
+            val apiKey = getProperty("TTS_API_KEY")
 
             return TTSConfig(
                 providerType = type,
                 apiKey = apiKey,
-                baseUrl = System.getenv("TTS_BASE_URL"),
-                voiceModel = System.getenv("TTS_MODEL_NAME") ?: when (type) {
+                baseUrl = getProperty("TTS_BASE_URL"),
+                voiceModel = getProperty("TTS_MODEL_NAME") ?: when (type) {
                     TTSProviderType.OPENAI -> "tts-1"
                     TTSProviderType.ELEVENLABS -> "eleven_monolingual_v1"
                     TTSProviderType.OPENROUTER -> "deepgram/flux-tts:free"

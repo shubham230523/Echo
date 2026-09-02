@@ -21,21 +21,21 @@ data class AIConfig(
     val modelName: String
 ) {
     companion object {
-        fun fromEnvironment(): AIConfig {
-            val typeStr = System.getenv("AI_PROVIDER") ?: "OPENROUTER"
+        fun fromEnvironment(getProperty: (String) -> String? = { System.getenv(it) }): AIConfig {
+            val typeStr = getProperty("AI_PROVIDER") ?: "OPENROUTER"
             val type = try {
                 AIProviderType.valueOf(typeStr.uppercase())
             } catch (e: Exception) {
                 AIProviderType.OPENROUTER
             }
 
-            val apiKey = System.getenv("AI_API_KEY")
+            val apiKey = getProperty("AI_API_KEY")
 
             return AIConfig(
                 providerType = type,
                 apiKey = apiKey,
-                baseUrl = System.getenv("AI_BASE_URL"), // Mainly for Ollama or custom OpenAI endpoints
-                modelName = System.getenv("AI_MODEL_NAME") ?: when (type) {
+                baseUrl = getProperty("AI_BASE_URL"), // Mainly for Ollama or custom OpenAI endpoints
+                modelName = getProperty("AI_MODEL_NAME") ?: when (type) {
                     AIProviderType.GEMINI -> "gemini-1.5-pro"
                     AIProviderType.OLLAMA -> "llama3"
                     AIProviderType.OPENAI_COMPATIBLE -> "gpt-4o"

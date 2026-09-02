@@ -29,7 +29,7 @@ class OpenRouterAIProvider(
     }
 
     private suspend fun callAi(prompt: String): String {
-        val response: OpenAIResponse = client.post(baseUrl) {
+        val response = client.post(baseUrl) {
             header(HttpHeaders.Authorization, "Bearer ${config.apiKey}")
             header("HTTP-Referer", "https://github.com/shubham230523/Echo")
             header("X-OpenRouter-Title", "Echo AI Audiobook Creator")
@@ -38,9 +38,16 @@ class OpenRouterAIProvider(
                 model = config.modelName,
                 messages = listOf(OpenAiMessage("user", prompt))
             ))
-        }.body()
+        }
 
-        return response.choices.firstOrNull()?.message?.content 
+        if (!response.status.isSuccess()) {
+            val errorBody = try { response.body<String>() } catch (e: Exception) { "Empty error body" }
+            throw AIProviderException.ServiceUnavailable("OpenRouter AI failed with status ${response.status}: $errorBody")
+        }
+
+        val responseBody = response.body<String>()
+        val openAiResponse = JsonExtractor.json.decodeFromString<OpenAIResponse>(responseBody)
+        return openAiResponse.choices.firstOrNull()?.message?.content 
             ?: throw AIProviderException.ServiceUnavailable("OpenRouter returned empty response")
     }
 

@@ -10,6 +10,7 @@ import io.ktor.server.netty.*
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import com.shubhamthorat.echo.server.ai.AIProviderFactory
@@ -31,7 +32,15 @@ fun main() {
 fun Application.module() {
     val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
-            json()
+            json(kotlinx.serialization.json.Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+            })
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 300_000 // 5 minutes
+            connectTimeoutMillis = 30_000 // 30 seconds
+            socketTimeoutMillis = 300_000 // 5 minutes
         }
     }
     
