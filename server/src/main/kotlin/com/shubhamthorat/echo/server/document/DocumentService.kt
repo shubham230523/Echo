@@ -5,6 +5,7 @@ import com.shubhamthorat.echo.server.ai.ChapterDetectionRequest
 import com.shubhamthorat.echo.server.ai.DocumentStructureRequest
 import com.shubhamthorat.echo.server.ai.DocumentStructureResponse
 import com.shubhamthorat.echo.server.api.dto.v1.GetChaptersResponse.ChapterDto
+import kotlinx.serialization.Serializable
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.text.PDFTextStripper
 import java.io.File
@@ -32,22 +33,45 @@ class DocumentService(private val aiProvider: AIProvider) {
 
                 val fullText = fullTextBuilder.toString()
 
-                // Stage 1: AI Structure Analysis
+                // Stage 1: AI Structure Analysis (including TOC)
                 val structure = aiProvider.analyzeDocumentStructure(
                     DocumentStructureRequest(fullText = fullText)
                 )
 
-                // Stage 2: AI Chapter Detection
-                var chapters = aiProvider.detectChapters(
-                    ChapterDetectionRequest(
-                        fullText = fullText,
-                        structure = structure
-                    )
-                ).chapters
+                // Stage 2: Robust Chapter Detection
+                var detectedChapters = if (structure.tableOfContents.isNotEmpty()) {
+                    val titles = structure.tableOfContents.map { it.title }
+                    val anchors = aiProvider.findChapterAnchors(fullText, titles)
+                    
+                    if (anchors.isNotEmpty()) {
+                        // Sort anchors by position to ensure order
+                        val sortedAnchors = anchors.sortedBy { it.startIndex }
+                        
+                        sortedAnchors.mapIndexed { index, anchor ->
+                            val nextStart = if (index + 1 < sortedAnchors.size) sortedAnchors[index + 1].startIndex else fullText.length
+                            com.shubhamthorat.echo.server.ai.DetectedChapter(
+                                title = anchor.title,
+                                index = index + 1,
+                                startIndex = anchor.startIndex,
+                                endIndex = nextStart,
+                                confidence = 0.9f
+                            )
+                        }
+                    } else {
+                        // Fallback to existing logic if anchors failed
+                        aiProvider.detectChapters(
+                            ChapterDetectionRequest(fullText = fullText, structure = structure)
+                        ).chapters
+                    }
+                } else {
+                    aiProvider.detectChapters(
+                        ChapterDetectionRequest(fullText = fullText, structure = structure)
+                    ).chapters
+                }
 
-                // Stage 3: Validation & Fallback
-                if (chapters.isEmpty()) {
-                    chapters = performRuleBasedChapterDetection(fullText)
+                // Stage 3: Validation & Rule-based Fallback
+                if (detectedChapters.isEmpty()) {
+                    detectedChapters = performRuleBasedChapterDetection(fullText)
                 }
 
                 AnalysisResult(
@@ -60,11 +84,12 @@ class DocumentService(private val aiProvider: AIProvider) {
                     author = structure.author,
                     documentType = structure.type,
                     language = structure.language,
-                    hierarchy = chapters.map { chapter ->
+                    hierarchy = detectedChapters.map { chapter ->
                         ChapterDto(
                             id = UUID.randomUUID().toString(),
                             title = chapter.title,
                             index = chapter.index,
+                            content = fullText.substring(chapter.startIndex, chapter.endIndex).trim(),
                             byteOffset = chapter.startIndex.toLong()
                         )
                     },
@@ -111,6 +136,7 @@ class DocumentService(private val aiProvider: AIProvider) {
     }
 }
 
+@Serializable
 data class AnalysisResult(
     val analysisId: String,
     val fileName: String,

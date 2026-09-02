@@ -48,6 +48,7 @@ data class GetChaptersResponse(
         val id: String,
         val title: String,
         val index: Int,
+        val content: String? = null,
         val byteOffset: Long? = null
     )
 }

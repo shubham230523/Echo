@@ -73,6 +73,12 @@ private class MockAIProvider : AIProvider {
         )
     }
 
+    override suspend fun findChapterAnchors(text: String, titles: List<String>): List<ChapterAnchor> {
+        return titles.mapIndexed { index, title ->
+            ChapterAnchor(title, index * 1000)
+        }
+    }
+
     override suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse {
         return TranscriptionResponse(
             text = "This is a mock transcription of the audio file.",

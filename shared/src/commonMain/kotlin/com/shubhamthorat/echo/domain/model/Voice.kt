@@ -11,6 +11,8 @@ enum class VoiceProvider {
     OPEN_AI,
     ELEVEN_LABS,
     AZURE,
+    DEEPGRAM,
+    MOCK,
     CUSTOM
 }
 

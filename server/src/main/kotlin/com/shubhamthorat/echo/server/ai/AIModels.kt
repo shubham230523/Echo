@@ -17,7 +17,20 @@ data class DocumentStructureResponse(
     val author: String? = null,
     val type: String, // e.g., "BOOK", "ARTICLE", "PAPER"
     val language: String,
+    val tableOfContents: List<TocEntry> = emptyList(),
     val hierarchy: List<StructureNode>
+)
+
+@Serializable
+data class TocEntry(
+    val title: String,
+    val level: Int
+)
+
+@Serializable
+data class ChapterAnchor(
+    val title: String,
+    val startIndex: Int
 )
 
 @Serializable

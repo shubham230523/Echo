@@ -74,6 +74,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.json)
+            implementation("com.squareup.okio:okio:3.10.2")
             
             api(libs.koin.core)
             api(libs.koin.compose)

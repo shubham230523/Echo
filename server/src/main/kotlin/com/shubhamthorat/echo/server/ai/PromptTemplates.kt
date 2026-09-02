@@ -4,19 +4,25 @@ object PromptTemplates {
 
     fun documentStructurePrompt(text: String): String {
         return """
-            Analyze the following document text and extract its hierarchical structure.
+            Analyze the following document text (first few thousand words) and extract its hierarchical structure and Table of Contents if present.
             Respond ONLY with a valid JSON object matching the schema below.
-            Do not include any preamble, markdown formatting (like ```json), or postamble.
+            Do not include any preamble, markdown formatting, or postamble.
 
             SCHEMA:
             {
               "title": "Main title of the document",
               "author": "Name of the author if found, otherwise null",
-              "type": "The type of document (e.g., BOOK, ARTICLE, RESEARCH_PAPER)",
-              "language": "ISO 639-1 language code (e.g., en, fr)",
+              "type": "BOOK, ARTICLE, RESEARCH_PAPER, etc.",
+              "language": "en, fr, etc.",
+              "tableOfContents": [
+                {
+                  "title": "Chapter/Section Title",
+                  "level": 1
+                }
+              ],
               "hierarchy": [
                 {
-                  "type": "Level type (e.g., PART, CHAPTER, SECTION)",
+                  "type": "PART, CHAPTER, SECTION",
                   "title": "Title of this section",
                   "startIndex": 0,
                   "endIndex": 1000,
@@ -26,7 +32,28 @@ object PromptTemplates {
             }
 
             DOCUMENT TEXT:
-            ${text.take(20000)}
+            ${text.take(30000)}
+        """.trimIndent()
+    }
+
+    fun chapterSplittingPrompt(text: String, titles: List<String>): String {
+        return """
+            I have a list of chapter titles extracted from the Table of Contents:
+            ${titles.joinToString(", ")}
+
+            Your task is to find the exact starting index (character offset) of each of these chapters in the provided text.
+            If a title is not found exactly, find the most likely starting position.
+            
+            Respond ONLY with a valid JSON array of objects:
+            [
+              {
+                "title": "Chapter Title",
+                "startIndex": 1234
+              }
+            ]
+
+            DOCUMENT TEXT (Sample of start/transitions):
+            ${text.take(50000)}
         """.trimIndent()
     }
 

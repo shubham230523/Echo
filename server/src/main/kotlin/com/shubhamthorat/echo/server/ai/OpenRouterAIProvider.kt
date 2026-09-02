@@ -96,6 +96,17 @@ class OpenRouterAIProvider(
         }
     }
 
+    override suspend fun findChapterAnchors(text: String, titles: List<String>): List<ChapterAnchor> {
+        val prompt = PromptTemplates.chapterSplittingPrompt(text, titles)
+        val response = callAi(prompt)
+        
+        return try {
+            JsonExtractor.extract<List<ChapterAnchor>>(response)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     override suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse {
         throw UnsupportedOperationException("STT not implemented for OpenRouter yet.")
     }
