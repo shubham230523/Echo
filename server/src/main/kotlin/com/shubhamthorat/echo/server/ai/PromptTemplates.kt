@@ -4,14 +4,20 @@ object PromptTemplates {
 
     fun documentStructurePrompt(text: String): String {
         return """
-            Analyze the following book text and extract its hierarchical structure.
+            Analyze the following book text and perform a complete structural analysis.
             Respond ONLY with a valid JSON object matching the schema below.
             Do not include any preamble, markdown formatting (like ```json), or postamble.
 
-            IMPORTANT: 
-            1. Identify the actual START and END of the narrative book content, ignoring legal boilerplate, license terms, and metadata at the very beginning and very end (e.g. Project Gutenberg license).
-            2. Extract the comprehensive Table of Contents if present.
-            3. For each chapter, provide the verbatim title exactly as it appears in the text to serve as an anchor.
+            GOALS:
+            1. Identify the Title and Author of the book.
+            2. Identify the actual START and END of the narrative book content, ignoring legal boilerplate, license terms, and metadata at the very beginning and very end (e.g. Project Gutenberg license).
+            3. Detect ALL narrative chapters.
+            4. For each chapter, provide the exact character offset (startIndex) where the chapter header begins in the provided text.
+
+            CRITICAL RULES:
+            - Provide exact character offsets. The text starts at index 0.
+            - Ensure chapters are in correct chronological order.
+            - There must be NO gaps between chapters. The endIndex of one chapter should be the startIndex of the next.
 
             SCHEMA:
             {
@@ -19,19 +25,13 @@ object PromptTemplates {
               "author": "Name of the author if found, otherwise null",
               "type": "BOOK, ARTICLE, RESEARCH_PAPER, etc.",
               "language": "en, fr, etc.",
-              "tableOfContents": [
+              "chapters": [
                 {
-                  "title": "Verbatim Chapter Title",
-                  "level": 1
-                }
-              ],
-              "hierarchy": [
-                {
-                  "type": "PART, CHAPTER, SECTION",
-                  "title": "Title of this section",
-                  "startIndex": 0,
-                  "endIndex": 1000,
-                  "children": []
+                  "title": "Chapter Title",
+                  "index": 1,
+                  "startIndex": 1234,
+                  "endIndex": 5678,
+                  "confidence": 0.95
                 }
               ]
             }

@@ -60,44 +60,14 @@ class DocumentService(private val aiProvider: AIProvider) {
                 
                 fullText = fullText.substring(actualStart, actualEnd).trim()
 
-                // Stage 1: AI Structure Analysis (including TOC)
-                val structure = aiProvider.analyzeDocumentStructure(
+                // Single Pass Stage: Complete AI Analysis (Metadata + Chapters + Offsets)
+                val analysis = aiProvider.analyzeDocumentStructure(
                     DocumentStructureRequest(fullText = fullText)
                 )
 
-                // Stage 2: Robust Chapter Detection via Anchor Slicing
-                var detectedChapters = if (structure.tableOfContents.isNotEmpty()) {
-                    val titles = structure.tableOfContents.map { it.title }
-                    val anchors = aiProvider.findChapterAnchors(fullText, titles)
-                    
-                    if (anchors.isNotEmpty()) {
-                        // Sort anchors by position to ensure order and eliminate duplicates
-                        val sortedAnchors = anchors.filter { it.startIndex >= 0 }
-                            .sortedBy { it.startIndex }
-                            .distinctBy { it.startIndex }
-                        
-                        sortedAnchors.mapIndexed { index, anchor ->
-                            val nextStart = if (index + 1 < sortedAnchors.size) sortedAnchors[index + 1].startIndex else fullText.length
-                            com.shubhamthorat.echo.server.ai.DetectedChapter(
-                                title = anchor.title,
-                                index = index + 1,
-                                startIndex = anchor.startIndex,
-                                endIndex = nextStart,
-                                confidence = 1.0f
-                            )
-                        }
-                    } else {
-                        aiProvider.detectChapters(
-                            ChapterDetectionRequest(fullText = fullText, structure = structure)
-                        ).chapters
-                    }
-                } else {
-                    aiProvider.detectChapters(
-                        ChapterDetectionRequest(fullText = fullText, structure = structure)
-                    ).chapters
-                }
+                var detectedChapters = analysis.chapters
 
-                // Stage 3: Validation & Rule-based Fallback
+                // Fallback & Validation
                 if (detectedChapters.isEmpty()) {
                     detectedChapters = performRuleBasedChapterDetection(fullText)
                 }
@@ -108,10 +78,10 @@ class DocumentService(private val aiProvider: AIProvider) {
                     pageCount = pageCount,
                     totalCharacters = totalChars,
                     totalWords = totalWords,
-                    title = structure.title,
-                    author = structure.author,
-                    documentType = structure.type,
-                    language = structure.language,
+                    title = analysis.title,
+                    author = analysis.author,
+                    documentType = analysis.type,
+                    language = analysis.language,
                     hierarchy = detectedChapters.map { chapter ->
                         val safeStart = Math.max(0, Math.min(fullText.length, chapter.startIndex))
                         val safeEnd = Math.max(safeStart, Math.min(fullText.length, chapter.endIndex))
@@ -149,7 +119,6 @@ class DocumentService(private val aiProvider: AIProvider) {
             .toList()
         
         if (matches.isEmpty()) {
-            // ...
             // Last resort: treat entire document as one chapter
             return listOf(
                 com.shubhamthorat.echo.server.ai.DetectedChapter(

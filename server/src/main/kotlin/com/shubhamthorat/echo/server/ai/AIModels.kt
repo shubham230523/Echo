@@ -17,10 +17,7 @@ data class DocumentStructureResponse(
     val author: String? = null,
     val type: String, // e.g., "BOOK", "ARTICLE", "PAPER"
     val language: String,
-    val contentStartOffset: Int? = null,
-    val contentEndOffset: Int? = null,
-    val tableOfContents: List<TocEntry> = emptyList(),
-    val hierarchy: List<StructureNode>
+    val chapters: List<DetectedChapter> = emptyList()
 )
 
 @Serializable
