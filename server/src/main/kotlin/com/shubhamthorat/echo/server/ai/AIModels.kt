@@ -58,6 +58,7 @@ data class ChapterDetectionResponse(
 data class DetectedChapter(
     val title: String,
     val index: Int,
+    val openingText: String? = null,
     val startIndex: Int = -1,
     val endIndex: Int = -1,
     val confidence: Float = 1.0f

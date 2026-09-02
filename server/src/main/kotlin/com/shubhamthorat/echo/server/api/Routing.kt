@@ -163,6 +163,7 @@ fun Application.configureRouting(
                     currentChapter = status.currentChapterTitle,
                     completedChapters = status.completedChapters,
                     totalChapters = status.totalChapters,
+                    storagePath = status.storagePath,
                     error = status.errorMessage,
                     audiobookId = if (status.status == "COMPLETED") UUID.randomUUID().toString() else null
                 ))

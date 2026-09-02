@@ -24,6 +24,7 @@ data class GenerationProgress(
     val totalChapters: Int,
     val progress: Float,
     val currentChapter: String? = null,
+    val storagePath: String? = null,
     val error: String? = null,
     val audiobookId: String? = null
 )

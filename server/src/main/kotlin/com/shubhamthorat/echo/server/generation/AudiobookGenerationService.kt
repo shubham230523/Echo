@@ -2,6 +2,8 @@ package com.shubhamthorat.echo.server.generation
 
 import com.shubhamthorat.echo.server.narration.NarrationService
 import kotlinx.coroutines.*
+import java.io.File
+import java.net.URI
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -93,6 +95,9 @@ class AudiobookGenerationService(
                                 completedChapters = currentResults.size,
                                 results = currentResults,
                                 failedChapters = currentFailures,
+                                storagePath = it.storagePath ?: generationResult.audioUrl?.let { url -> 
+                                    try { File(URI(url)).parentFile.absolutePath } catch (e: Exception) { null }
+                                },
                                 progress = (index + 1).toFloat() / chapters.size
                             ) 
                         }
@@ -170,6 +175,7 @@ data class AudiobookJobStatus(
     val currentStep: String = "Initializing",
     val progress: Float = 0f,
     val status: String,
+    val storagePath: String? = null,
     val results: List<ChapterGenerationStatus> = emptyList(),
     val failedChapters: List<FailedChapterRecord> = emptyList(),
     val errorMessage: String? = null,

@@ -28,6 +28,7 @@ data class GenerationUiState(
     val status: GenerationStatus = GenerationStatus.IDLE,
     val progress: Float = 0f,
     val currentChapter: String? = null,
+    val storagePath: String? = null,
     val message: String = "",
     val error: String? = null
 ) {

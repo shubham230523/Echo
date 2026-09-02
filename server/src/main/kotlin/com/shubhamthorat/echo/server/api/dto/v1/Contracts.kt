@@ -136,6 +136,7 @@ data class GenerationStatusResponse(
     val currentChapter: String? = null,
     val completedChapters: Int,
     val totalChapters: Int,
+    val storagePath: String? = null,
     val error: String? = null,
     val audiobookId: String? = null
 )

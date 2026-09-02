@@ -86,6 +86,7 @@ fun NarrationScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                         .padding(EchoTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.large)
                 ) {
@@ -98,7 +99,6 @@ fun NarrationScreen(
 
                     // Narration Text Section
                     Column(
-                        modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.small)
                     ) {
                         Row(
@@ -130,8 +130,7 @@ fun NarrationScreen(
                             title = "",
                             content = currentChapter.narrationText,
                             backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
-                            textColor = MaterialTheme.colorScheme.onSurface,
-                            maxHeight = 1000.dp // Allow it to expand more than original text
+                            textColor = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -160,8 +159,7 @@ private fun TextSection(
     title: String,
     content: String,
     backgroundColor: androidx.compose.ui.graphics.Color,
-    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    maxHeight: androidx.compose.ui.unit.Dp = 240.dp
+    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.small)) {
         if (title.isNotEmpty()) {
@@ -175,7 +173,6 @@ private fun TextSection(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = maxHeight)
                 .clip(RoundedCornerShape(EchoTheme.spacing.medium)),
             color = backgroundColor,
             shape = RoundedCornerShape(EchoTheme.spacing.medium)
@@ -183,8 +180,7 @@ private fun TextSection(
             Text(
                 text = content,
                 modifier = Modifier
-                    .padding(EchoTheme.spacing.medium)
-                    .verticalScroll(rememberScrollState()),
+                    .padding(EchoTheme.spacing.medium),
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor
             )

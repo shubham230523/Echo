@@ -148,7 +148,8 @@ class GenerationViewModel(
                 status = mapBackendStatus(progress.status),
                 progress = progress.progress,
                 message = "${progress.currentStep}: ${progress.currentChapter ?: ""}",
-                currentChapter = progress.currentChapter
+                currentChapter = progress.currentChapter,
+                storagePath = progress.storagePath
             )
         }
     }

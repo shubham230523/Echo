@@ -53,18 +53,25 @@ class GenerationService(
 
                     val audioFile = File(URI(result.audioFileUri))
                     
+                    // Move to public storage
+                    val publicDir = File("output/audiobooks/${chapterId.substringBefore("_ch")}")
+                    publicDir.mkdirs()
+                    val targetFile = File(publicDir, "${chapterId}.mp3")
+                    audioFile.renameTo(targetFile)
+                    println("📄 Stored audio at: ${targetFile.absolutePath}")
+
                     // Extract actual metadata
                     val (fileSize, duration) = try {
-                        val af = AudioFileIO.read(audioFile)
-                        audioFile.length() to af.audioHeader.trackLength.toDouble()
+                        val af = AudioFileIO.read(targetFile)
+                        targetFile.length() to af.audioHeader.trackLength.toDouble()
                     } catch (e: Exception) {
                         // Fallback to provider result or 0
-                        audioFile.length() to result.durationSeconds
+                        targetFile.length() to result.durationSeconds
                     }
 
                     val completedStatus = currentStatus.copy(
                         status = "COMPLETED",
-                        audioUrl = result.audioFileUri,
+                        audioUrl = targetFile.toURI().toString(),
                         durationSeconds = duration,
                         fileSizeByte = fileSize
                     )

@@ -65,52 +65,71 @@ class DocumentService(private val aiProvider: AIProvider) {
                     DocumentStructureRequest(fullText = fullText)
                 )
 
-                // Hybrid Sequential Search: Locate headers in the actual text in order
+                // Hybrid Sequential Search: Locate headers and opening text
                 val detectedChapters = mutableListOf<com.shubhamthorat.echo.server.ai.DetectedChapter>()
                 
-                // Start searching after the likely TOC area (first 5% of text or min 2000 chars)
-                var searchFromIndex = Math.min(fullText.length, Math.max(2000, (fullText.length * 0.05).toInt()))
+                // Start searching from index 0 now that we have unique opening text to verify
+                var searchFromIndex = 0
                 
                 analysis.chapters.forEachIndexed { i, aiChapter ->
                     val rawTitle = aiChapter.title
+                    val openingText = aiChapter.openingText
                     
-                    // Search strategy 1: Exact match
-                    var foundIdx = fullText.indexOf(rawTitle, searchFromIndex, ignoreCase = true)
+                    // Search for the header
+                    var headerIdx = fullText.indexOf(rawTitle, searchFromIndex, ignoreCase = true)
                     
-                    // Search strategy 2: Just the Chapter number (e.g. "CHAPTER XXX")
-                    if (foundIdx == -1 && rawTitle.contains("CHAPTER", ignoreCase = true)) {
-                        val chapterNum = rawTitle.substringBefore(".").trim()
-                        foundIdx = fullText.indexOf(chapterNum, searchFromIndex, ignoreCase = true)
-                    }
-                    
-                    // Search strategy 3: Just the title part
-                    if (foundIdx == -1 && rawTitle.contains(".")) {
-                        val titlePart = rawTitle.substringAfter(".").trim()
-                        if (titlePart.length > 5) {
-                            foundIdx = fullText.indexOf(titlePart, searchFromIndex, ignoreCase = true)
+                    // If header has multiple occurrences (TOC), we use openingText to confirm the real one
+                    if (headerIdx != -1 && openingText != null) {
+                        val followingText = fullText.substring(headerIdx, Math.min(fullText.length, headerIdx + 1000))
+                        // We check if the opening text follows this header
+                        if (!followingText.contains(openingText.take(20), ignoreCase = true)) {
+                            // This might be the TOC entry, try to find the NEXT occurrence
+                            val secondOccurrence = fullText.indexOf(rawTitle, headerIdx + rawTitle.length, ignoreCase = true)
+                            if (secondOccurrence != -1) {
+                                headerIdx = secondOccurrence
+                            }
                         }
                     }
 
-                    if (foundIdx != -1) {
+                    if (headerIdx != -1) {
+                        println("📍 Found Chapter ${i + 1} ['${rawTitle}'] at offset $headerIdx")
                         detectedChapters.add(
                             com.shubhamthorat.echo.server.ai.DetectedChapter(
                                 title = rawTitle,
                                 index = aiChapter.index,
-                                startIndex = foundIdx,
+                                startIndex = headerIdx,
                                 confidence = 1.0f
                             )
                         )
-                        searchFromIndex = foundIdx + 10 // Advance slightly
+                        searchFromIndex = headerIdx + rawTitle.length
                     } else {
-                        // Mark as missing but keep the slot to prevent shifting
-                        detectedChapters.add(
-                            com.shubhamthorat.echo.server.ai.DetectedChapter(
-                                title = rawTitle,
-                                index = aiChapter.index,
-                                startIndex = -1,
-                                confidence = 0f
-                            )
-                        )
+                        // Fallback: If header not found, try searching just for the opening text
+                        if (openingText != null) {
+                            val openingIdx = fullText.indexOf(openingText.take(30), searchFromIndex, ignoreCase = true)
+                            if (openingIdx != -1) {
+                                println("📍 Found Chapter ${i + 1} via Opening Text at offset $openingIdx")
+                                detectedChapters.add(
+                                    com.shubhamthorat.echo.server.ai.DetectedChapter(
+                                        title = rawTitle,
+                                        index = aiChapter.index,
+                                        startIndex = openingIdx,
+                                        confidence = 0.9f
+                                    )
+                                )
+                                searchFromIndex = openingIdx + 10
+                            } else {
+                                println("❌ MISSING Chapter ${i + 1} ['${rawTitle}']")
+                                // Mark as missing
+                                detectedChapters.add(
+                                    com.shubhamthorat.echo.server.ai.DetectedChapter(
+                                        title = rawTitle,
+                                        index = aiChapter.index,
+                                        startIndex = -1,
+                                        confidence = 0f
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
 

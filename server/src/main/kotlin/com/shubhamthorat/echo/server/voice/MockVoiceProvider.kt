@@ -1,10 +1,12 @@
 package com.shubhamthorat.echo.server.voice
 
 class MockVoiceProvider : VoiceProvider {
+    private val sampleUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+
     override suspend fun getAvailableVoices(): List<BackendVoice> {
         return listOf(
-            BackendVoice("flux-alexis-en", "Alexis (Warm)", "DEEPGRAM", "en-US", "FEMALE", null),
-            BackendVoice("flux-bree-en", "Bree (Clear)", "DEEPGRAM", "en-US", "FEMALE", null),
+            BackendVoice("flux-alexis-en", "Alexis (Warm)", "DEEPGRAM", "en-US", "FEMALE", sampleUrl),
+            BackendVoice("flux-bree-en", "Bree (Clear)", "DEEPGRAM", "en-US", "FEMALE", sampleUrl),
             BackendVoice("flux-brittany-en", "Brittany (Bright)", "DEEPGRAM", "en-US", "FEMALE", null),
             BackendVoice("flux-brooke-en", "Brooke (Soft)", "DEEPGRAM", "en-US", "FEMALE", null),
             BackendVoice("flux-bruce-en", "Bruce (Deep)", "DEEPGRAM", "en-US", "MALE", null),

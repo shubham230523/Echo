@@ -113,6 +113,16 @@ fun GenerationScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+
+                        if (uiState.storagePath != null) {
+                            Spacer(modifier = Modifier.height(EchoTheme.spacing.small))
+                            Text(
+                                text = "Storage: ${uiState.storagePath}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
                 

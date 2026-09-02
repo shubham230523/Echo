@@ -2,6 +2,7 @@ package com.shubhamthorat.echo.feature.voice
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shubhamthorat.echo.core.audio.AudioPlayer
 import com.shubhamthorat.echo.core.result.AppResult
 import com.shubhamthorat.echo.domain.model.Voice
 import com.shubhamthorat.echo.domain.model.VoiceProvider
@@ -19,7 +20,8 @@ import kotlinx.coroutines.launch
  */
 class VoiceSelectionViewModel(
     private val systemRepository: SystemRepository,
-    private val currentAnalysisRepository: CurrentAnalysisRepository
+    private val currentAnalysisRepository: CurrentAnalysisRepository,
+    private val audioPlayer: AudioPlayer
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VoiceSelectionUiState(isLoading = true))
@@ -27,6 +29,17 @@ class VoiceSelectionViewModel(
 
     init {
         loadVoices()
+        observePlayerState()
+    }
+
+    private fun observePlayerState() {
+        viewModelScope.launch {
+            audioPlayer.state.collect { state ->
+                if (state.isCompleted) {
+                    _uiState.update { it.copy(previewingVoiceId = null) }
+                }
+            }
+        }
     }
 
     private fun loadVoices() {
@@ -63,30 +76,34 @@ class VoiceSelectionViewModel(
 
     fun onPreviewClick(voiceId: String) {
         val currentState = _uiState.value
-        
+        val voice = currentState.voices.find { it.id == voiceId }
+        val previewUrl = voice?.previewAudioUrl
+
         // If clicking the one currently playing/loading, stop it
         if (currentState.previewingVoiceId == voiceId) {
+            audioPlayer.stop()
             _uiState.update { it.copy(previewingVoiceId = null, isPreviewLoading = false) }
             return
         }
+
+        if (previewUrl == null) return
 
         // Start loading preview
         viewModelScope.launch {
             _uiState.update { it.copy(previewingVoiceId = voiceId, isPreviewLoading = true) }
             
-            // Simulate network/buffer delay
-            delay(1000)
-            
-            // Start "playing"
-            _uiState.update { it.copy(isPreviewLoading = false) }
-            
-            // Simulate playback duration
-            delay(5000)
-            
-            // Stop if still the same voice
-            if (_uiState.value.previewingVoiceId == voiceId) {
-                _uiState.update { it.copy(previewingVoiceId = null) }
+            try {
+                audioPlayer.load(previewUrl)
+                audioPlayer.play()
+                _uiState.update { it.copy(isPreviewLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(previewingVoiceId = null, isPreviewLoading = false) }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayer.release()
     }
 }

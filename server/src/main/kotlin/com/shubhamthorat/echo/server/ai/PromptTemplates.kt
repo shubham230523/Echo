@@ -12,7 +12,9 @@ object PromptTemplates {
             REQUIREMENT: Respond ONLY with a raw JSON object. No conversational text, no markdown.
 
             INSTRUCTION FOR CHAPTERS:
-            For each chapter, providing the title EXACTLY as it appears in the text body (verbatim).
+            For each chapter, provide the title EXACTLY as it appears in the narrative text body (verbatim). 
+            Include the "CHAPTER X" prefix if it exists in the text. 
+            Crucially, also provide the 'openingText' which must be the first 2-3 sentences of that chapter's narrative content (at least 20 words). This will be used to distinguish the real chapter from the Table of Contents.
             
             SCHEMA:
             {
@@ -22,8 +24,9 @@ object PromptTemplates {
               "language": "en",
               "chapters": [
                 {
-                  "title": "Verbatim Chapter Header",
-                  "index": 1
+                  "title": "Verbatim Chapter Header (e.g. CHAPTER I. Falcon's Nest)",
+                  "index": 1,
+                  "openingText": "The first 2-3 sentences of this chapter's actual narrative content..."
                 }
               ]
             }
