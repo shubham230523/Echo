@@ -31,11 +31,6 @@ interface AIProvider {
     suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse
 
     /**
-     * Finds the exact starting positions of chapters based on their titles.
-     */
-    suspend fun findChapterAnchors(text: String, titles: List<String>): List<ChapterAnchor>
-
-    /**
      * Transcribes audio into text.
      */
     suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse

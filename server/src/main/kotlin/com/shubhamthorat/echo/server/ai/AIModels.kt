@@ -21,12 +21,6 @@ data class DocumentStructureResponse(
 )
 
 @Serializable
-data class TocEntry(
-    val title: String,
-    val level: Int
-)
-
-@Serializable
 data class ChapterAnchor(
     val title: String,
     val startIndex: Int

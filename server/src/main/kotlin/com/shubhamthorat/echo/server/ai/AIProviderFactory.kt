@@ -31,7 +31,7 @@ private class MockAIProvider : AIProvider {
             author = "Mock Author",
             type = "BOOK",
             language = "en",
-            hierarchy = emptyList()
+            chapters = emptyList()
         )
     }
 
@@ -71,12 +71,6 @@ private class MockAIProvider : AIProvider {
                 WordPronunciation("Ktor", "/keɪtɔːr/", "KAY-tor", 0.95f)
             )
         )
-    }
-
-    override suspend fun findChapterAnchors(text: String, titles: List<String>): List<ChapterAnchor> {
-        return titles.mapIndexed { index, title ->
-            ChapterAnchor(title, index * 1000)
-        }
     }
 
     override suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse {

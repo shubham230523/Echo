@@ -65,7 +65,7 @@ object PromptTemplates {
 
     fun chapterDetectionPrompt(text: String, structure: DocumentStructureResponse?): String {
         val structureInfo = structure?.let { 
-            "Document: ${it.title} by ${it.author}. Content range identified: ${it.contentStartOffset} to ${it.contentEndOffset}."
+            "Document: ${it.title} by ${it.author}."
         } ?: "No existing structure info."
 
         return """

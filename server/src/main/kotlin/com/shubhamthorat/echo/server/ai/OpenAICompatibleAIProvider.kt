@@ -22,7 +22,7 @@ class OpenAICompatibleAIProvider(
                 title = "Unknown",
                 type = "UNKNOWN",
                 language = "en",
-                hierarchy = emptyList()
+                chapters = emptyList()
             )
         }
     }
@@ -98,17 +98,6 @@ class OpenAICompatibleAIProvider(
             JsonExtractor.extract<PronunciationResponse>(response)
         } catch (e: Exception) {
             PronunciationResponse(guides = emptyList())
-        }
-    }
-
-    override suspend fun findChapterAnchors(text: String, titles: List<String>): List<ChapterAnchor> {
-        val prompt = PromptTemplates.chapterSplittingPrompt(text, titles)
-        val response = callAi(prompt)
-        
-        return try {
-            JsonExtractor.extract<ChapterAnchorsResponse>(response).anchors
-        } catch (e: Exception) {
-            emptyList()
         }
     }
 
