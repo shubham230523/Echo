@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonElement
 data class OpenAIRequest(
     val model: String,
     val messages: List<OpenAiMessage>,
+    val stream: Boolean = false,
     val reasoning: ReasoningConfig? = null
 )
 
@@ -18,7 +19,7 @@ data class ReasoningConfig(
 @Serializable
 data class OpenAiMessage(
     val role: String,
-    val content: String,
+    val content: String? = null,
     val reasoning_details: JsonElement? = null
 )
 
@@ -29,5 +30,12 @@ data class OpenAIResponse(
 
 @Serializable
 data class OpenAiChoice(
-    val message: OpenAiMessage
+    val message: OpenAiMessage? = null,
+    val delta: OpenAiDelta? = null
+)
+
+@Serializable
+data class OpenAiDelta(
+    val content: String? = null,
+    val reasoning_details: JsonElement? = null
 )

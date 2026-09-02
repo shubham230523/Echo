@@ -3,7 +3,10 @@ package com.shubhamthorat.echo.server.ai
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
+import kotlinx.serialization.json.*
 
 class OpenRouterAIProvider(
     private val client: HttpClient,
@@ -29,8 +32,11 @@ class OpenRouterAIProvider(
     }
 
     private suspend fun callAi(prompt: String): String {
-        println("📡 Calling OpenRouter [${config.modelName}] with reasoning enabled... (Prompt length: ${prompt.length})")
-        val response = client.post(baseUrl) {
+        println("📡 Calling OpenRouter [${config.modelName}] with streaming enabled... (Prompt length: ${prompt.length})")
+        
+        val fullContent = StringBuilder()
+        
+        client.preparePost(baseUrl) {
             header(HttpHeaders.Authorization, "Bearer ${config.apiKey}")
             header("HTTP-Referer", "https://github.com/shubham230523/Echo")
             header("X-OpenRouter-Title", "Echo AI Audiobook Creator")
@@ -38,19 +44,42 @@ class OpenRouterAIProvider(
             setBody(OpenAIRequest(
                 model = config.modelName,
                 messages = listOf(OpenAiMessage("user", prompt)),
+                stream = true,
                 reasoning = ReasoningConfig(enabled = true)
             ))
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                val errorBody = try { response.bodyAsText() } catch (e: Exception) { "Empty error body" }
+                throw AIProviderException.ServiceUnavailable("OpenRouter AI failed with status ${response.status}: $errorBody")
+            }
+
+            val channel = response.bodyAsChannel()
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.startsWith("data: ")) {
+                    val data = line.substring(6).trim()
+                    if (data == "[DONE]") break
+                    
+                    try {
+                        val chunk = JsonExtractor.json.decodeFromString<OpenAIResponse>(data)
+                        val content = chunk.choices.firstOrNull()?.delta?.content
+                        if (content != null) {
+                            fullContent.append(content)
+                            print(content) // Live feedback in console
+                        }
+                    } catch (e: Exception) {
+                        // Skip non-json or malformed chunks
+                    }
+                }
+            }
         }
 
-        if (!response.status.isSuccess()) {
-            val errorBody = try { response.body<String>() } catch (e: Exception) { "Empty error body" }
-            throw AIProviderException.ServiceUnavailable("OpenRouter AI failed with status ${response.status}: $errorBody")
+        println("\n✅ AI processing complete.")
+        val result = fullContent.toString()
+        if (result.isBlank()) {
+            throw AIProviderException.ServiceUnavailable("OpenRouter returned empty response")
         }
-
-        val responseBody = response.body<String>()
-        val openAiResponse = JsonExtractor.json.decodeFromString<OpenAIResponse>(responseBody)
-        return openAiResponse.choices.firstOrNull()?.message?.content 
-            ?: throw AIProviderException.ServiceUnavailable("OpenRouter returned empty response")
+        return result
     }
 
     override suspend fun detectChapters(request: ChapterDetectionRequest): ChapterDetectionResponse {

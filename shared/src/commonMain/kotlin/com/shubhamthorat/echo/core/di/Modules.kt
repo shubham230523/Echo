@@ -35,7 +35,7 @@ val coreModule = module {
 }
 
 val networkModule = module {
-    single { NetworkConfig(baseUrl = "http://localhost:8080", isDebug = true) }
+    single { NetworkConfig(baseUrl = "http://localhost:8080", isDebug = true, requestTimeoutMillis = 1_800_000L) }
     single<HttpClient> { HttpClientFactory(get(), get()).create() }
     single<EchoApi> { KtorEchoApi(get()) }
 }
