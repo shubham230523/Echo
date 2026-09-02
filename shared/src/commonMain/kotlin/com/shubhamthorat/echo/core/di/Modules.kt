@@ -63,7 +63,7 @@ val domainModule = module {
 val featureModule = module {
     viewModel { LibraryViewModel(get()) }
     viewModel { ImportDocumentViewModel(get()) }
-    viewModel { DocumentAnalysisViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { DocumentAnalysisViewModel(get(), get(), get()) }
     viewModel { ChaptersViewModel(get()) }
     viewModel { NarrationViewModel(get()) }
     viewModel { VoiceSelectionViewModel(get(), get()) }

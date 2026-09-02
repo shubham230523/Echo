@@ -29,6 +29,7 @@ class OpenRouterAIProvider(
     }
 
     private suspend fun callAi(prompt: String): String {
+        println("📡 Calling OpenRouter [${config.modelName}] with reasoning enabled... (Prompt length: ${prompt.length})")
         val response = client.post(baseUrl) {
             header(HttpHeaders.Authorization, "Bearer ${config.apiKey}")
             header("HTTP-Referer", "https://github.com/shubham230523/Echo")

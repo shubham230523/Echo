@@ -34,36 +34,47 @@ class DocumentService(private val aiProvider: AIProvider) {
                 var fullText = fullTextBuilder.toString()
 
                 // Project Gutenberg specific cleanup: Trim boilerplate
-                val startMarker = "*** START OF"
-                val endMarker = "*** END OF"
-                val startIdx = fullText.indexOf(startMarker)
-                val endIdx = fullText.lastIndexOf(endMarker)
+                val startMarkers = listOf("*** START OF", "PROJECT GUTENBERG EBOOK")
+                val endMarkers = listOf("*** END OF", "END OF THE PROJECT GUTENBERG EBOOK")
                 
-                if (startIdx != -1) {
-                    // Find the end of the line containing startMarker
-                    val lineEnd = fullText.indexOf("\n", startIdx)
-                    if (lineEnd != -1) {
-                        fullText = fullText.substring(lineEnd).trim()
+                var actualStart = 0
+                for (marker in startMarkers) {
+                    val idx = fullText.indexOf(marker, ignoreCase = true)
+                    if (idx != -1) {
+                        val lineEnd = fullText.indexOf("\n", idx)
+                        if (lineEnd != -1) {
+                            actualStart = lineEnd
+                            break
+                        }
                     }
                 }
                 
-                if (endIdx != -1 && endIdx > (fullText.length / 2)) {
-                    fullText = fullText.substring(0, endIdx).trim()
+                var actualEnd = fullText.length
+                for (marker in endMarkers) {
+                    val idx = fullText.lastIndexOf(marker, ignoreCase = true)
+                    if (idx != -1 && idx > (fullText.length / 2)) {
+                        actualEnd = idx
+                        break
+                    }
                 }
+                
+                fullText = fullText.substring(actualStart, actualEnd).trim()
 
                 // Stage 1: AI Structure Analysis (including TOC)
                 val structure = aiProvider.analyzeDocumentStructure(
                     DocumentStructureRequest(fullText = fullText)
                 )
 
-                // Stage 2: Robust Chapter Detection
+                // Stage 2: Robust Chapter Detection via Anchor Slicing
                 var detectedChapters = if (structure.tableOfContents.isNotEmpty()) {
                     val titles = structure.tableOfContents.map { it.title }
                     val anchors = aiProvider.findChapterAnchors(fullText, titles)
                     
                     if (anchors.isNotEmpty()) {
-                        // Sort anchors by position to ensure order
-                        val sortedAnchors = anchors.sortedBy { it.startIndex }
+                        // Sort anchors by position to ensure order and eliminate duplicates
+                        val sortedAnchors = anchors.filter { it.startIndex >= 0 }
+                            .sortedBy { it.startIndex }
+                            .distinctBy { it.startIndex }
                         
                         sortedAnchors.mapIndexed { index, anchor ->
                             val nextStart = if (index + 1 < sortedAnchors.size) sortedAnchors[index + 1].startIndex else fullText.length
@@ -72,11 +83,10 @@ class DocumentService(private val aiProvider: AIProvider) {
                                 index = index + 1,
                                 startIndex = anchor.startIndex,
                                 endIndex = nextStart,
-                                confidence = 0.9f
+                                confidence = 1.0f
                             )
                         }
                     } else {
-                        // Fallback to existing logic if anchors failed
                         aiProvider.detectChapters(
                             ChapterDetectionRequest(fullText = fullText, structure = structure)
                         ).chapters

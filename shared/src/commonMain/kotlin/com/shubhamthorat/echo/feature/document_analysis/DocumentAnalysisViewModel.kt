@@ -4,14 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shubhamthorat.echo.core.common.PlatformFile
 import com.shubhamthorat.echo.core.common.getPlatformFileSystem
-import com.shubhamthorat.echo.core.result.AppResult
 import com.shubhamthorat.echo.data.remote.EchoApi
 import com.shubhamthorat.echo.domain.model.*
-import com.shubhamthorat.echo.domain.repository.ChapterDetector
 import com.shubhamthorat.echo.domain.repository.ChapterRepository
 import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
-import com.shubhamthorat.echo.domain.repository.PdfProcessor
-import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,9 +20,6 @@ import kotlinx.datetime.Instant
  * ViewModel for managing the document analysis process.
  */
 class DocumentAnalysisViewModel(
-    private val pdfProcessor: PdfProcessor,
-    private val cleanDocumentTextUseCase: CleanDocumentTextUseCase,
-    private val chapterDetector: ChapterDetector,
     private val chapterRepository: ChapterRepository,
     private val currentAnalysisRepository: CurrentAnalysisRepository,
     private val echoApi: EchoApi
@@ -120,12 +113,10 @@ class DocumentAnalysisViewModel(
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(
-                        error = "Deep analysis failed: ${e.message}. Falling back to local analysis...",
-                        statusMessage = "AI Analysis failed, trying local fallback..."
+                        error = e.message ?: "Unknown analysis error",
+                        statusMessage = "Analysis failed: ${e.message ?: "Unknown error"}"
                     )
                 }
-                delay(2000)
-                performLocalFallback(file)
             }
         }
     }
@@ -133,36 +124,5 @@ class DocumentAnalysisViewModel(
     private fun estimateDuration(text: String): Int {
         val wordCount = text.split(Regex("\\s+")).filter { it.isNotBlank() }.size
         return (wordCount / 2.1).toInt()
-    }
-
-    private suspend fun performLocalFallback(file: PlatformFile) {
-        // ... existing local analysis logic ...
-        // For now, I'll just move the old logic here
-        val documentId = file.path.hashCode().toString()
-        val document = Document(
-            id = documentId,
-            fileName = file.name,
-            filePath = file.path,
-            fileSizeBytes = file.sizeBytes ?: 0L,
-            pageCount = 0,
-            importedAt = Instant.fromEpochMilliseconds(0),
-            status = DocumentStatus.ANALYZING
-        )
-
-        val result = pdfProcessor.extractText(document)
-        // ... (rest of old logic) ...
-        // Since I'm refactoring, I'll just re-implement the core part of it
-        if (result is AppResult.Success) {
-            val cleanedText = cleanDocumentTextUseCase(result.data)
-            val detectionResult = chapterDetector.detectChapters(
-                ChapterDetectionRequest(documentId = document.id, cleanedText = cleanedText)
-            )
-            if (detectionResult is AppResult.Success) {
-                chapterRepository.deleteChaptersByDocumentId(document.id)
-                chapterRepository.insertChapters(detectionResult.data.chapters)
-                currentAnalysisRepository.setAnalysisResult(document, detectionResult.data.chapters)
-                _uiState.update { it.copy(currentStage = AnalysisStage.COMPLETED, isCompleted = true) }
-            }
-        }
     }
 }

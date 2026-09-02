@@ -38,9 +38,9 @@ fun Application.module() {
             })
         }
         install(HttpTimeout) {
-            requestTimeoutMillis = 300_000 // 5 minutes
-            connectTimeoutMillis = 30_000 // 30 seconds
-            socketTimeoutMillis = 300_000 // 5 minutes
+            requestTimeoutMillis = 1_800_000 // 30 minutes
+            connectTimeoutMillis = 60_000 // 60 seconds
+            socketTimeoutMillis = 1_800_000 // 30 minutes
         }
     }
     

@@ -4,13 +4,14 @@ object PromptTemplates {
 
     fun documentStructurePrompt(text: String): String {
         return """
-            Analyze the following document text and extract its hierarchical structure.
+            Analyze the following book text and extract its hierarchical structure.
             Respond ONLY with a valid JSON object matching the schema below.
             Do not include any preamble, markdown formatting (like ```json), or postamble.
 
             IMPORTANT: 
-            1. Identify the actual START and END of the narrative book content, ignoring legal boilerplate, license terms, and metadata at the very beginning and very end.
-            2. Extract the Table of Contents if present.
+            1. Identify the actual START and END of the narrative book content, ignoring legal boilerplate, license terms, and metadata at the very beginning and very end (e.g. Project Gutenberg license).
+            2. Extract the comprehensive Table of Contents if present.
+            3. For each chapter, provide the verbatim title exactly as it appears in the text to serve as an anchor.
 
             SCHEMA:
             {
@@ -18,11 +19,9 @@ object PromptTemplates {
               "author": "Name of the author if found, otherwise null",
               "type": "BOOK, ARTICLE, RESEARCH_PAPER, etc.",
               "language": "en, fr, etc.",
-              "contentStartOffset": 5000,
-              "contentEndOffset": 150000,
               "tableOfContents": [
                 {
-                  "title": "Chapter/Section Title",
+                  "title": "Verbatim Chapter Title",
                   "level": 1
                 }
               ],
@@ -37,11 +36,8 @@ object PromptTemplates {
               ]
             }
 
-            DOCUMENT TEXT (First 30k chars):
-            ${text.take(30000)}
-
-            DOCUMENT TEXT (Last 10k chars):
-            ${text.takeLast(10000)}
+            DOCUMENT TEXT:
+            $text
         """.trimIndent()
     }
 
@@ -62,8 +58,8 @@ object PromptTemplates {
               ]
             }
 
-            DOCUMENT TEXT (Sample):
-            ${text.take(50000)}
+            DOCUMENT TEXT:
+            $text
         """.trimIndent()
     }
 
@@ -99,7 +95,7 @@ object PromptTemplates {
             }
 
             DOCUMENT TEXT (Focus on transitions):
-            ${text}
+            ${text.take(20000)}
         """.trimIndent()
     }
 
