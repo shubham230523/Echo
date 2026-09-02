@@ -23,6 +23,7 @@ import com.shubhamthorat.echo.server.voice.TTSProviderFactory
 import com.shubhamthorat.echo.server.voice.VoiceService
 
 fun main() {
+    println("🚀 Starting Echo Backend Server on ${Config.host}:${Config.port}...")
     embeddedServer(Netty, port = Config.port, host = Config.host, module = Application::module)
         .start(wait = true)
 }

@@ -31,7 +31,25 @@ class DocumentService(private val aiProvider: AIProvider) {
                     fullTextBuilder.append(pageText)
                 }
 
-                val fullText = fullTextBuilder.toString()
+                var fullText = fullTextBuilder.toString()
+
+                // Project Gutenberg specific cleanup: Trim boilerplate
+                val startMarker = "*** START OF"
+                val endMarker = "*** END OF"
+                val startIdx = fullText.indexOf(startMarker)
+                val endIdx = fullText.lastIndexOf(endMarker)
+                
+                if (startIdx != -1) {
+                    // Find the end of the line containing startMarker
+                    val lineEnd = fullText.indexOf("\n", startIdx)
+                    if (lineEnd != -1) {
+                        fullText = fullText.substring(lineEnd).trim()
+                    }
+                }
+                
+                if (endIdx != -1 && endIdx > (fullText.length / 2)) {
+                    fullText = fullText.substring(0, endIdx).trim()
+                }
 
                 // Stage 1: AI Structure Analysis (including TOC)
                 val structure = aiProvider.analyzeDocumentStructure(
@@ -85,12 +103,14 @@ class DocumentService(private val aiProvider: AIProvider) {
                     documentType = structure.type,
                     language = structure.language,
                     hierarchy = detectedChapters.map { chapter ->
+                        val safeStart = Math.max(0, Math.min(fullText.length, chapter.startIndex))
+                        val safeEnd = Math.max(safeStart, Math.min(fullText.length, chapter.endIndex))
                         ChapterDto(
                             id = UUID.randomUUID().toString(),
                             title = chapter.title,
                             index = chapter.index,
-                            content = fullText.substring(chapter.startIndex, chapter.endIndex).trim(),
-                            byteOffset = chapter.startIndex.toLong()
+                            content = fullText.substring(safeStart, safeEnd).trim(),
+                            byteOffset = safeStart.toLong()
                         )
                     },
                     status = "ANALYZED"
@@ -102,10 +122,24 @@ class DocumentService(private val aiProvider: AIProvider) {
     }
 
     private fun performRuleBasedChapterDetection(text: String): List<com.shubhamthorat.echo.server.ai.DetectedChapter> {
-        val chapterRegex = Regex("(?i)(chapter|section)\\s+(\\d+|[ivxlc]+)", RegexOption.MULTILINE)
-        val matches = chapterRegex.findAll(text).toList()
+        // More specific regex that looks for typical book chapter starts
+        // Also look for Roman Numerals (I, II, III...)
+        val chapterRegex = Regex("(?i)^(chapter|section|part)\\s+(\\d+|[ivxlc]+).*$", RegexOption.MULTILINE)
+        
+        // Filter out sections that look like legal boilerplate (e.g. from Project Gutenberg)
+        val matches = chapterRegex.findAll(text)
+            .filter { match ->
+                val linesAround = text.substring(
+                    Math.max(0, match.range.first - 100),
+                    Math.min(text.length, match.range.last + 100)
+                )
+                !linesAround.contains("Project Gutenberg", ignoreCase = true) &&
+                !linesAround.contains("License", ignoreCase = true)
+            }
+            .toList()
         
         if (matches.isEmpty()) {
+            // ...
             // Last resort: treat entire document as one chapter
             return listOf(
                 com.shubhamthorat.echo.server.ai.DetectedChapter(

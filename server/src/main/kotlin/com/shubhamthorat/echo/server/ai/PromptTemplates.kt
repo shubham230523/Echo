@@ -4,9 +4,13 @@ object PromptTemplates {
 
     fun documentStructurePrompt(text: String): String {
         return """
-            Analyze the following document text (first few thousand words) and extract its hierarchical structure and Table of Contents if present.
+            Analyze the following document text and extract its hierarchical structure.
             Respond ONLY with a valid JSON object matching the schema below.
-            Do not include any preamble, markdown formatting, or postamble.
+            Do not include any preamble, markdown formatting (like ```json), or postamble.
+
+            IMPORTANT: 
+            1. Identify the actual START and END of the narrative book content, ignoring legal boilerplate, license terms, and metadata at the very beginning and very end.
+            2. Extract the Table of Contents if present.
 
             SCHEMA:
             {
@@ -14,6 +18,8 @@ object PromptTemplates {
               "author": "Name of the author if found, otherwise null",
               "type": "BOOK, ARTICLE, RESEARCH_PAPER, etc.",
               "language": "en, fr, etc.",
+              "contentStartOffset": 5000,
+              "contentEndOffset": 150000,
               "tableOfContents": [
                 {
                   "title": "Chapter/Section Title",
@@ -31,47 +37,53 @@ object PromptTemplates {
               ]
             }
 
-            DOCUMENT TEXT:
+            DOCUMENT TEXT (First 30k chars):
             ${text.take(30000)}
+
+            DOCUMENT TEXT (Last 10k chars):
+            ${text.takeLast(10000)}
         """.trimIndent()
     }
 
     fun chapterSplittingPrompt(text: String, titles: List<String>): String {
         return """
-            I have a list of chapter titles extracted from the Table of Contents:
+            I have a list of chapter titles:
             ${titles.joinToString(", ")}
 
-            Your task is to find the exact starting index (character offset) of each of these chapters in the provided text.
-            If a title is not found exactly, find the most likely starting position.
+            Your task is to find the character offset where each chapter begins in the provided book text.
             
-            Respond ONLY with a valid JSON array of objects:
-            [
-              {
-                "title": "Chapter Title",
-                "startIndex": 1234
-              }
-            ]
+            Respond ONLY with a valid JSON object matching this schema:
+            {
+              "anchors": [
+                {
+                  "title": "Chapter Title",
+                  "startIndex": 1234
+                }
+              ]
+            }
 
-            DOCUMENT TEXT (Sample of start/transitions):
+            DOCUMENT TEXT (Sample):
             ${text.take(50000)}
         """.trimIndent()
     }
 
     fun chapterDetectionPrompt(text: String, structure: DocumentStructureResponse?): String {
         val structureInfo = structure?.let { 
-            "Existing structure found: ${it.title} (${it.type}) with ${it.hierarchy.size} top-level nodes."
+            "Document: ${it.title} by ${it.author}. Content range identified: ${it.contentStartOffset} to ${it.contentEndOffset}."
         } ?: "No existing structure info."
 
         return """
-            Detect all chapters in the following document text. 
+            Detect all CHAPTERS in the provided book text. 
             $structureInfo
             
+            CRITICAL RULES:
+            1. ONLY extract narrative chapters. IGNORE the Table of Contents, Foreword, Introduction, and legal boilerplate at the end (e.g. Project Gutenberg license).
+            2. If you see "Chapter X", "I.", "II.", or similar headers, these are usually chapter markers.
+            3. Ensure the chapters are in correct chronological order.
+            4. There are NO gaps between chapters. The endIndex of one MUST be the startIndex of the next.
+            5. Provide exact character offsets (startIndex and endIndex) for each chapter.
+            
             Respond ONLY with a valid JSON object matching the schema below.
-            Ensure:
-            1. Chapters are in correct chronological order.
-            2. There are NO gaps between chapters (the endIndex of one should be the startIndex of next, or very close).
-            3. The full content is covered from start to finish.
-            4. Provide a confidence score (0.0 to 1.0) for each chapter.
 
             SCHEMA:
             {
@@ -79,15 +91,15 @@ object PromptTemplates {
                 {
                   "title": "Chapter Title",
                   "index": 1,
-                  "startIndex": 0,
-                  "endIndex": 5000,
+                  "startIndex": 1234,
+                  "endIndex": 5678,
                   "confidence": 0.95
                 }
               ]
             }
 
-            DOCUMENT TEXT:
-            ${text.take(30000)}
+            DOCUMENT TEXT (Focus on transitions):
+            ${text}
         """.trimIndent()
     }
 

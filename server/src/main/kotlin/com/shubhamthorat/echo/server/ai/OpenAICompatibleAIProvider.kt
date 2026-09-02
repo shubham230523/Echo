@@ -99,7 +99,7 @@ class OpenAICompatibleAIProvider(
         val response = callAi(prompt)
         
         return try {
-            JsonExtractor.extract<List<ChapterAnchor>>(response)
+            JsonExtractor.extract<ChapterAnchorsResponse>(response).anchors
         } catch (e: Exception) {
             emptyList()
         }

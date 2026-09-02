@@ -86,6 +86,9 @@ fun Application.configureRouting(
                 try {
                     val result = documentService.analyzePdf(uploadedFile)
                     call.respond(HttpStatusCode.Accepted, result)
+                } catch (e: Exception) {
+                    application.log.error("Failed to analyze PDF", e)
+                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Unknown error")))
                 } finally {
                     // Cleanup handled by system or moved to permanent storage
                 }
