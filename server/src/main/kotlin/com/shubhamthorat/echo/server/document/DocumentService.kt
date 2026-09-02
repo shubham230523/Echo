@@ -60,16 +60,61 @@ class DocumentService(private val aiProvider: AIProvider) {
                 
                 fullText = fullText.substring(actualStart, actualEnd).trim()
 
-                // Single Pass Stage: Complete AI Analysis (Metadata + Chapters + Offsets)
+                // Single Pass Stage: Get Verbatim Chapter Titles from AI
                 val analysis = aiProvider.analyzeDocumentStructure(
                     DocumentStructureRequest(fullText = fullText)
                 )
 
-                var detectedChapters = analysis.chapters
+                // Hybrid Sequential Search: Locate headers in the actual text in order
+                val detectedChapters = mutableListOf<com.shubhamthorat.echo.server.ai.DetectedChapter>()
+                
+                // Start searching after the likely TOC area (first 5% of text or min 2000 chars)
+                var searchFromIndex = Math.min(fullText.length, Math.max(2000, (fullText.length * 0.05).toInt()))
+                
+                analysis.chapters.forEachIndexed { i, aiChapter ->
+                    // Search for this chapter title sequentially
+                    val foundIdx = fullText.indexOf(aiChapter.title, searchFromIndex, ignoreCase = true)
+                    
+                    if (foundIdx != -1) {
+                        detectedChapters.add(
+                            com.shubhamthorat.echo.server.ai.DetectedChapter(
+                                title = aiChapter.title,
+                                index = i + 1,
+                                startIndex = foundIdx,
+                                confidence = 1.0f
+                            )
+                        )
+                        // Next chapter must start AFTER this one
+                        searchFromIndex = foundIdx + aiChapter.title.length
+                    } else {
+                        // Fallback: if not found sequentially, try a global search as a last resort
+                        val globalIdx = fullText.lastIndexOf(aiChapter.title, ignoreCase = true)
+                        if (globalIdx != -1 && globalIdx > searchFromIndex) {
+                            detectedChapters.add(
+                                com.shubhamthorat.echo.server.ai.DetectedChapter(
+                                    title = aiChapter.title,
+                                    index = i + 1,
+                                    startIndex = globalIdx,
+                                    confidence = 0.8f
+                                )
+                            )
+                            searchFromIndex = globalIdx + aiChapter.title.length
+                        }
+                    }
+                }
 
-                // Fallback & Validation
-                if (detectedChapters.isEmpty()) {
-                    detectedChapters = performRuleBasedChapterDetection(fullText)
+                // If AI failed to find chapters or we couldn't locate them, use rule-based fallback
+                var finalChapters = if (detectedChapters.isEmpty()) {
+                    performRuleBasedChapterDetection(fullText)
+                } else {
+                    // Sort by index found to ensure correct order
+                    val sorted = detectedChapters.sortedBy { it.startIndex }
+                    
+                    // Fill in the endIndices by looking at the next chapter's start
+                    sorted.mapIndexed { index, chapter ->
+                        val nextStart = if (index + 1 < sorted.size) sorted[index + 1].startIndex else fullText.length
+                        chapter.copy(endIndex = nextStart)
+                    }
                 }
 
                 AnalysisResult(
@@ -82,7 +127,7 @@ class DocumentService(private val aiProvider: AIProvider) {
                     author = analysis.author,
                     documentType = analysis.type,
                     language = analysis.language,
-                    hierarchy = detectedChapters.map { chapter ->
+                    hierarchy = finalChapters.map { chapter ->
                         val safeStart = Math.max(0, Math.min(fullText.length, chapter.startIndex))
                         val safeEnd = Math.max(safeStart, Math.min(fullText.length, chapter.endIndex))
                         ChapterDto(

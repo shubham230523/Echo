@@ -4,40 +4,31 @@ object PromptTemplates {
 
     fun documentStructurePrompt(text: String): String {
         return """
-            Analyze the following book text and perform a complete structural analysis.
-            Respond ONLY with a valid JSON object matching the schema below.
-            Do not include any preamble, markdown formatting (like ```json), or postamble.
+            BOOK CONTENT:
+            $text
 
-            GOALS:
-            1. Identify the Title and Author of the book.
-            2. Identify the actual START and END of the narrative book content, ignoring legal boilerplate, license terms, and metadata at the very beginning and very end (e.g. Project Gutenberg license).
-            3. Detect ALL narrative chapters.
-            4. For each chapter, provide the exact character offset (startIndex) where the chapter header begins in the provided text.
+            ---
+            TASK: Extract metadata and all narrative chapters from the book above.
+            REQUIREMENT: Respond ONLY with a raw JSON object. No conversational text, no markdown.
 
-            CRITICAL RULES:
-            - Provide exact character offsets. The text starts at index 0.
-            - Ensure chapters are in correct chronological order.
-            - There must be NO gaps between chapters. The endIndex of one chapter should be the startIndex of the next.
-
+            INSTRUCTION FOR CHAPTERS:
+            For each chapter, providing the title EXACTLY as it appears in the text body (verbatim).
+            
             SCHEMA:
             {
-              "title": "Main title of the document",
-              "author": "Name of the author if found, otherwise null",
-              "type": "BOOK, ARTICLE, RESEARCH_PAPER, etc.",
-              "language": "en, fr, etc.",
+              "title": "Book Title",
+              "author": "Author Name",
+              "type": "BOOK",
+              "language": "en",
               "chapters": [
                 {
-                  "title": "Chapter Title",
-                  "index": 1,
-                  "startIndex": 1234,
-                  "endIndex": 5678,
-                  "confidence": 0.95
+                  "title": "Verbatim Chapter Header",
+                  "index": 1
                 }
               ]
             }
 
-            DOCUMENT TEXT:
-            $text
+            JSON OUTPUT START:
         """.trimIndent()
     }
 
