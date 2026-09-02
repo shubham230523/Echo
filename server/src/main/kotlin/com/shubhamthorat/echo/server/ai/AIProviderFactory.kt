@@ -38,9 +38,30 @@ private class MockAIProvider : AIProvider {
     override suspend fun detectChapters(request: ChapterDetectionRequest): ChapterDetectionResponse {
         return ChapterDetectionResponse(
             chapters = listOf(
-                DetectedChapter("Chapter 1: The Beginning", 1, 0, 1000, 1.0f),
-                DetectedChapter("Chapter 2: The Middle", 2, 1000, 2000, 1.0f),
-                DetectedChapter("Chapter 3: The End", 3, 2000, 3000, 1.0f)
+                DetectedChapter(
+                    title = "Chapter 1: The Beginning",
+                    index = 1,
+                    openingText = "It was a dark and stormy night...",
+                    startIndex = 0,
+                    endIndex = 1000,
+                    confidence = 1.0f
+                ),
+                DetectedChapter(
+                    title = "Chapter 2: The Middle",
+                    index = 2,
+                    openingText = "The journey continued through the forest...",
+                    startIndex = 1000,
+                    endIndex = 2000,
+                    confidence = 1.0f
+                ),
+                DetectedChapter(
+                    title = "Chapter 3: The End",
+                    index = 3,
+                    openingText = "Finally, they reached the crystal gate...",
+                    startIndex = 2000,
+                    endIndex = 3000,
+                    confidence = 1.0f
+                )
             )
         )
     }
