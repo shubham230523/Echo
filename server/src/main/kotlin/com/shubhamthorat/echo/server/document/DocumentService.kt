@@ -72,49 +72,58 @@ class DocumentService(private val aiProvider: AIProvider) {
                 var searchFromIndex = Math.min(fullText.length, Math.max(2000, (fullText.length * 0.05).toInt()))
                 
                 analysis.chapters.forEachIndexed { i, aiChapter ->
-                    // Search for this chapter title sequentially
-                    val foundIdx = fullText.indexOf(aiChapter.title, searchFromIndex, ignoreCase = true)
+                    val rawTitle = aiChapter.title
                     
+                    // Search strategy 1: Exact match
+                    var foundIdx = fullText.indexOf(rawTitle, searchFromIndex, ignoreCase = true)
+                    
+                    // Search strategy 2: Just the Chapter number (e.g. "CHAPTER XXX")
+                    if (foundIdx == -1 && rawTitle.contains("CHAPTER", ignoreCase = true)) {
+                        val chapterNum = rawTitle.substringBefore(".").trim()
+                        foundIdx = fullText.indexOf(chapterNum, searchFromIndex, ignoreCase = true)
+                    }
+                    
+                    // Search strategy 3: Just the title part
+                    if (foundIdx == -1 && rawTitle.contains(".")) {
+                        val titlePart = rawTitle.substringAfter(".").trim()
+                        if (titlePart.length > 5) {
+                            foundIdx = fullText.indexOf(titlePart, searchFromIndex, ignoreCase = true)
+                        }
+                    }
+
                     if (foundIdx != -1) {
                         detectedChapters.add(
                             com.shubhamthorat.echo.server.ai.DetectedChapter(
-                                title = aiChapter.title,
-                                index = i + 1,
+                                title = rawTitle,
+                                index = aiChapter.index,
                                 startIndex = foundIdx,
                                 confidence = 1.0f
                             )
                         )
-                        // Next chapter must start AFTER this one
-                        searchFromIndex = foundIdx + aiChapter.title.length
+                        searchFromIndex = foundIdx + 10 // Advance slightly
                     } else {
-                        // Fallback: if not found sequentially, try a global search as a last resort
-                        val globalIdx = fullText.lastIndexOf(aiChapter.title, ignoreCase = true)
-                        if (globalIdx != -1 && globalIdx > searchFromIndex) {
-                            detectedChapters.add(
-                                com.shubhamthorat.echo.server.ai.DetectedChapter(
-                                    title = aiChapter.title,
-                                    index = i + 1,
-                                    startIndex = globalIdx,
-                                    confidence = 0.8f
-                                )
+                        // Mark as missing but keep the slot to prevent shifting
+                        detectedChapters.add(
+                            com.shubhamthorat.echo.server.ai.DetectedChapter(
+                                title = rawTitle,
+                                index = aiChapter.index,
+                                startIndex = -1,
+                                confidence = 0f
                             )
-                            searchFromIndex = globalIdx + aiChapter.title.length
-                        }
+                        )
                     }
                 }
 
-                // If AI failed to find chapters or we couldn't locate them, use rule-based fallback
-                var finalChapters = if (detectedChapters.isEmpty()) {
-                    performRuleBasedChapterDetection(fullText)
-                } else {
-                    // Sort by index found to ensure correct order
-                    val sorted = detectedChapters.sortedBy { it.startIndex }
+                // Clean Slicing: Only slice between valid start points
+                val validChapters = detectedChapters.filter { it.startIndex != -1 }.sortedBy { it.startIndex }
+                
+                val finalChapters = detectedChapters.map { chapter ->
+                    if (chapter.startIndex == -1) return@map chapter.copy(endIndex = -1)
                     
-                    // Fill in the endIndices by looking at the next chapter's start
-                    sorted.mapIndexed { index, chapter ->
-                        val nextStart = if (index + 1 < sorted.size) sorted[index + 1].startIndex else fullText.length
-                        chapter.copy(endIndex = nextStart)
-                    }
+                    // Find the next valid start index in the document
+                    val nextChapter = validChapters.firstOrNull { it.startIndex > chapter.startIndex }
+                    val nextStart = nextChapter?.startIndex ?: fullText.length
+                    chapter.copy(endIndex = nextStart)
                 }
 
                 AnalysisResult(
@@ -128,14 +137,20 @@ class DocumentService(private val aiProvider: AIProvider) {
                     documentType = analysis.type,
                     language = analysis.language,
                     hierarchy = finalChapters.map { chapter ->
-                        val safeStart = Math.max(0, Math.min(fullText.length, chapter.startIndex))
-                        val safeEnd = Math.max(safeStart, Math.min(fullText.length, chapter.endIndex))
+                        val content = if (chapter.startIndex != -1) {
+                            val safeStart = Math.max(0, Math.min(fullText.length, chapter.startIndex))
+                            val safeEnd = Math.max(safeStart, Math.min(fullText.length, chapter.endIndex))
+                            fullText.substring(safeStart, safeEnd).trim()
+                        } else {
+                            "[Content not found for this chapter header in the text]"
+                        }
+                        
                         ChapterDto(
                             id = UUID.randomUUID().toString(),
                             title = chapter.title,
                             index = chapter.index,
-                            content = fullText.substring(safeStart, safeEnd).trim(),
-                            byteOffset = safeStart.toLong()
+                            content = content,
+                            byteOffset = chapter.startIndex.toLong()
                         )
                     },
                     status = "ANALYZED"

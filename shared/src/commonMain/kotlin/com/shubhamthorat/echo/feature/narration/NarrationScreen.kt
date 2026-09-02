@@ -86,8 +86,7 @@ fun NarrationScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(EchoTheme.spacing.medium)
-                        .verticalScroll(rememberScrollState()),
+                        .padding(EchoTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.large)
                 ) {
                     // Original Text Section
@@ -98,7 +97,10 @@ fun NarrationScreen(
                     )
 
                     // Narration Text Section
-                    Column(verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.small)) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.small)
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -128,7 +130,8 @@ fun NarrationScreen(
                             title = "",
                             content = currentChapter.narrationText,
                             backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
-                            textColor = MaterialTheme.colorScheme.onSurface
+                            textColor = MaterialTheme.colorScheme.onSurface,
+                            maxHeight = 1000.dp // Allow it to expand more than original text
                         )
                     }
                 }
@@ -157,7 +160,8 @@ private fun TextSection(
     title: String,
     content: String,
     backgroundColor: androidx.compose.ui.graphics.Color,
-    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
+    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    maxHeight: androidx.compose.ui.unit.Dp = 240.dp
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.small)) {
         if (title.isNotEmpty()) {
@@ -171,13 +175,16 @@ private fun TextSection(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = maxHeight)
                 .clip(RoundedCornerShape(EchoTheme.spacing.medium)),
             color = backgroundColor,
             shape = RoundedCornerShape(EchoTheme.spacing.medium)
         ) {
             Text(
                 text = content,
-                modifier = Modifier.padding(EchoTheme.spacing.medium),
+                modifier = Modifier
+                    .padding(EchoTheme.spacing.medium)
+                    .verticalScroll(rememberScrollState()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = textColor
             )
