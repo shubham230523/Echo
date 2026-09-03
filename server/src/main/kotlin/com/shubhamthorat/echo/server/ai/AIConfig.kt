@@ -18,7 +18,8 @@ data class AIConfig(
     val providerType: AIProviderType,
     val apiKey: String?,
     val baseUrl: String?,
-    val modelName: String
+    val modelName: String,
+    val useCache: Boolean = true
 ) {
     companion object {
         fun fromEnvironment(getProperty: (String) -> String? = { System.getenv(it) }): AIConfig {
@@ -30,6 +31,7 @@ data class AIConfig(
             }
 
             val apiKey = getProperty("AI_API_KEY")
+            val useCache = getProperty("AI_USE_CACHE")?.toBoolean() ?: true
 
             return AIConfig(
                 providerType = type,
@@ -41,7 +43,8 @@ data class AIConfig(
                     AIProviderType.OPENAI_COMPATIBLE -> "gpt-4o"
                     AIProviderType.OPENROUTER -> "nvidia/nemotron-3.5-lightning:free"
                     AIProviderType.MOCK -> "mock-model"
-                }
+                },
+                useCache = useCache
             )
         }
     }

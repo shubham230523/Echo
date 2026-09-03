@@ -1,6 +1,7 @@
 package com.shubhamthorat.echo.server.ai
 
 import io.ktor.client.*
+import java.io.File
 
 /**
  * Factory for creating AIProvider instances based on configuration.
@@ -11,101 +12,133 @@ class AIProviderFactory(
 ) {
 
     fun create(): AIProvider {
-        return when (config.providerType) {
-            AIProviderType.GEMINI -> OpenAICompatibleAIProvider(client, config) // Placeholder if using compatible endpoint
+        val baseProvider = when (config.providerType) {
+            AIProviderType.GEMINI -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OLLAMA -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OPENAI_COMPATIBLE -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OPENROUTER -> OpenRouterAIProvider(client, config)
             AIProviderType.MOCK -> MockAIProvider()
         }
+
+        return if (config.useCache) {
+            CachingAIProvider(
+                delegate = baseProvider,
+                cacheDir = File(".ai_cache"),
+                modelName = config.modelName
+            )
+        } else {
+            baseProvider
+        }
     }
 }
 
 /**
- * Basic mock implementation for development without active AI service.
+ * High-fidelity mock implementation for development.
+ * Performs heuristic analysis on text to simulate AI behavior without API costs.
  */
 private class MockAIProvider : AIProvider {
     override suspend fun analyzeDocumentStructure(request: DocumentStructureRequest): DocumentStructureResponse {
+        val text = request.fullText
+        val title = text.lines().firstOrNull { it.isNotBlank() }?.take(100) ?: "Mock Document"
+        val author = if (text.contains("by ", ignoreCase = true)) {
+            val idx = text.indexOf("by ", ignoreCase = true)
+            text.substring(idx + 3, (idx + 50).coerceAtMost(text.length)).lines().firstOrNull()?.trim()
+        } else "Mock Author"
+
+        val chapters = detectChapters(ChapterDetectionRequest(fullText = text)).chapters
+
         return DocumentStructureResponse(
-            title = "Mock Title",
-            author = "Mock Author",
+            title = title,
+            author = author,
             type = "BOOK",
             language = "en",
-            chapters = emptyList()
+            chapters = chapters
         )
     }
 
     override suspend fun detectChapters(request: ChapterDetectionRequest): ChapterDetectionResponse {
-        return ChapterDetectionResponse(
-            chapters = listOf(
+        val text = request.fullText
+        val chapterRegex = Regex("(?i)^(chapter|section|part)\\s+(\\d+|[ivxlc]+).*$", RegexOption.MULTILINE)
+        val matches = chapterRegex.findAll(text).toList()
+        
+        val detected = if (matches.isEmpty()) {
+            listOf(
                 DetectedChapter(
-                    title = "Chapter 1: The Beginning",
+                    title = "Main Content",
                     index = 1,
-                    openingText = "It was a dark and stormy night...",
+                    openingText = text.take(200).replace("\n", " "),
                     startIndex = 0,
-                    endIndex = 1000,
-                    confidence = 1.0f
-                ),
-                DetectedChapter(
-                    title = "Chapter 2: The Middle",
-                    index = 2,
-                    openingText = "The journey continued through the forest...",
-                    startIndex = 1000,
-                    endIndex = 2000,
-                    confidence = 1.0f
-                ),
-                DetectedChapter(
-                    title = "Chapter 3: The End",
-                    index = 3,
-                    openingText = "Finally, they reached the crystal gate...",
-                    startIndex = 2000,
-                    endIndex = 3000,
-                    confidence = 1.0f
+                    endIndex = text.length,
+                    confidence = 0.5f
                 )
             )
-        )
+        } else {
+            matches.mapIndexed { index, match ->
+                val nextStart = if (index + 1 < matches.size) matches[index + 1].range.first else text.length
+                val chapterText = text.substring(match.range.first, nextStart).trim()
+                
+                // Extract first 2 sentences for openingText
+                val opening = chapterText.split(Regex("[.!?]\\s+"))
+                    .take(2)
+                    .joinToString(". ")
+                    .replace("\n", " ")
+                    .take(300)
+
+                DetectedChapter(
+                    title = match.value.trim(),
+                    index = index + 1,
+                    openingText = opening,
+                    startIndex = match.range.first,
+                    endIndex = nextStart,
+                    confidence = 0.9f
+                )
+            }
+        }
+
+        return ChapterDetectionResponse(chapters = detected)
     }
 
     override suspend fun prepareNarration(request: NarrationPreparationRequest): NarrationPreparationResponse {
+        // Just return the text but with a "prepared" prefix to show it's working
         return NarrationPreparationResponse(
-            preparedText = "Mocked narration friendly text: ${request.text}",
-            estimatedDurationSeconds = (request.text.length / 10.0),
-            notes = "This is a mock response for development."
+            preparedText = "[Simulated Narration Fixes] ${request.text}",
+            estimatedDurationSeconds = (request.text.length / 15.0),
+            notes = "Heuristic-based mock narration."
         )
     }
 
     override suspend fun detectDialogue(request: DialogueDetectionRequest): DialogueDetectionResponse {
-        return DialogueDetectionResponse(
-            segments = listOf(
-                DialogueSegment("He looked at her and said,", "Narrator", false),
-                DialogueSegment(" \"I'll be back soon.\"", "Male Character", true),
-                DialogueSegment(" She nodded and whispered,", "Narrator", false),
-                DialogueSegment(" \"I know.\"", "Female Character", true)
-            )
-        )
+        val text = request.text
+        val quoteRegex = Regex("\"([^\"]*)\"")
+        val segments = mutableListOf<DialogueSegment>()
+        
+        var lastEnd = 0
+        quoteRegex.findAll(text).forEach { match ->
+            if (match.range.first > lastEnd) {
+                segments.add(DialogueSegment(text.substring(lastEnd, match.range.first), "Narrator", false))
+            }
+            segments.add(DialogueSegment(match.groupValues[1], "Unknown Character", true))
+            lastEnd = match.range.last + 1
+        }
+        
+        if (lastEnd < text.length) {
+            segments.add(DialogueSegment(text.substring(lastEnd), "Narrator", false))
+        }
+
+        return DialogueDetectionResponse(segments = segments)
     }
 
     override suspend fun assistPronunciation(request: PronunciationRequest): PronunciationResponse {
         return PronunciationResponse(
-            guides = listOf(
-                WordPronunciation("Echo", "/ˈɛkoʊ/", "EH-koh", 0.99f),
-                WordPronunciation("Ktor", "/keɪtɔːr/", "KAY-tor", 0.95f)
-            )
+            guides = listOf(WordPronunciation(request.text.take(10), null, null, 1.0f))
         )
     }
 
     override suspend fun transcribeAudio(request: TranscriptionRequest): TranscriptionResponse {
-        return TranscriptionResponse(
-            text = "This is a mock transcription of the audio file.",
-            confidence = 0.98f
-        )
+        return TranscriptionResponse("Simulated transcription for: ${request.audioUrl}", 1.0f)
     }
 
     override suspend fun compareTranscription(request: ContentComparisonRequest): ContentComparisonResponse {
-        return ContentComparisonResponse(
-            matchScore = 0.95f,
-            issues = emptyList(),
-            differences = emptyList()
-        )
+        return ContentComparisonResponse(1.0f, emptyList(), emptyList())
     }
 }

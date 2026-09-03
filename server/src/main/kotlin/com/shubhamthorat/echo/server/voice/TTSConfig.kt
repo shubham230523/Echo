@@ -18,7 +18,8 @@ data class TTSConfig(
     val providerType: TTSProviderType,
     val apiKey: String?,
     val baseUrl: String?,
-    val voiceModel: String
+    val voiceModel: String,
+    val useCache: Boolean = true
 ) {
     companion object {
         fun fromEnvironment(getProperty: (String) -> String? = { System.getenv(it) }): TTSConfig {
@@ -30,6 +31,7 @@ data class TTSConfig(
             }
 
             val apiKey = getProperty("TTS_API_KEY")
+            val useCache = getProperty("TTS_USE_CACHE")?.toBoolean() ?: true
 
             return TTSConfig(
                 providerType = type,
@@ -40,7 +42,8 @@ data class TTSConfig(
                     TTSProviderType.ELEVENLABS -> "eleven_monolingual_v1"
                     TTSProviderType.OPENROUTER -> "deepgram/flux-tts:free"
                     else -> "default"
-                }
+                },
+                useCache = useCache
             )
         }
     }

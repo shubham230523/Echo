@@ -4,6 +4,8 @@ import com.shubhamthorat.echo.server.ai.*
 import com.shubhamthorat.echo.server.api.dto.v1.GetChaptersResponse.ChapterDto
 import com.shubhamthorat.echo.server.core.retryWithBackoff
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.text.PDFTextStripper
 import java.io.File
@@ -81,14 +83,12 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
             // Project Gutenberg / Boilerplate cleanup
             val cleanedText = cleanupText(fullText)
 
-            // Create chunks for parallel AI processing (e.g., 50 pages per chunk with 5 page overlap)
-            val chunkSize = 50
-            val overlap = 5
+            // Smaller chunks for higher reliability on free AI models
+            val chunkSize = 15 
+            val overlap = 2
             val chunks = mutableListOf<TextChunk>()
             
-            // For simplicity in this LangGraph mock, we'll chunk by character count if we don't have per-page text
-            // But better to chunk by estimated characters per page (~3000)
-            val charsPerPage = cleanedText.length / pageCount
+            val charsPerPage = if (pageCount > 0) cleanedText.length / pageCount else cleanedText.length
             val charsPerChunk = chunkSize * charsPerPage
             val charsOverlap = overlap * charsPerPage
 
@@ -103,8 +103,9 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
                         pageRange = (currentStart / charsPerPage)..(currentEnd / charsPerPage)
                     )
                 )
-                if (currentEnd == cleanedText.length) break
+                if (currentEnd >= cleanedText.length) break
                 currentStart = currentEnd - charsOverlap
+                if (currentStart < 0) currentStart = 0
             }
 
             state.copy(
@@ -116,40 +117,41 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
     }
 
     private suspend fun batchAnalysisNode(state: AnalysisState): AnalysisState = coroutineScope {
-        println("🤖 Node: BatchAnalysisNode - Processing ${state.chunks.size} chunks in parallel")
+        println("🤖 Node: BatchAnalysisNode - Processing ${state.chunks.size} chunks with controlled parallelism")
         
-        val deferredChapters = state.chunks.mapIndexed { index, chunk ->
+        // 1. Separate Metadata Extraction (Lightweight call on first 5 pages)
+        val metadataSample = state.fullText.take(15000)
+        val metadata = retryWithBackoff(maxRetries = 2) {
+            println("  Agent [Metadata]: Extracting book info...")
+            aiProvider.analyzeDocumentStructure(DocumentStructureRequest(fullText = metadataSample))
+        }
+
+        // 2. Controlled Parallel Chapter Detection
+        val aiSemaphore = Semaphore(2) // Max 2 concurrent AI requests for free tier
+        
+        val deferredChapters = state.chunks.map { chunk ->
             async {
-                retryWithBackoff(maxRetries = 3) {
-                    println("  Agent $index: Analyzing pages ${chunk.pageRange}")
-                    // First chunk also gets the overall book metadata
-                    if (index == 0) {
-                        val response = aiProvider.analyzeDocumentStructure(
-                            DocumentStructureRequest(fullText = chunk.text)
-                        )
-                        // Adjust offsets back to global space
-                        val adjusted = response.chapters.map { it.copy(startIndex = it.startIndex + chunk.startIndex) }
-                        Triple(adjusted, response.title, response.author)
-                    } else {
+                aiSemaphore.withPermit {
+                    retryWithBackoff(maxRetries = 3) {
+                        println("  Agent [${chunk.pageRange}]: Detecting chapters (Length: ${chunk.text.length})")
                         val response = aiProvider.detectChapters(
                             ChapterDetectionRequest(fullText = chunk.text)
                         )
-                        val adjusted = response.chapters.map { it.copy(startIndex = it.startIndex + chunk.startIndex) }
-                        Triple(adjusted, null, null)
+                        response.chapters.map { it.copy(startIndex = it.startIndex + chunk.startIndex) }
                     }
                 }
             }
         }
 
         val results = deferredChapters.awaitAll()
-        val allChapters = results.flatMap { it.first }
-        val title = results.firstOrNull { it.second != null }?.second ?: "Unknown Title"
-        val author = results.firstOrNull { it.third != null }?.third
+        val allChapters = results.flatten()
 
         state.copy(
             rawChapters = allChapters,
-            title = title,
-            author = author
+            title = metadata.title,
+            author = metadata.author,
+            type = metadata.type,
+            language = metadata.language
         )
     }
 

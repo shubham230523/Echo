@@ -65,7 +65,6 @@ class OpenRouterAIProvider(
                         val content = chunk.choices.firstOrNull()?.delta?.content
                         if (content != null) {
                             fullContent.append(content)
-                            print(content) // Live feedback in console
                         }
                     } catch (e: Exception) {
                         // Skip non-json or malformed chunks

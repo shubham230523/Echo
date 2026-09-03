@@ -1,6 +1,7 @@
 package com.shubhamthorat.echo.server.voice
 
 import io.ktor.client.*
+import java.io.File
 
 /**
  * Factory for creating TTSProvider instances based on configuration.
@@ -11,11 +12,20 @@ class TTSProviderFactory(
 ) {
 
     fun create(): TTSProvider {
-        return when (config.providerType) {
+        val baseProvider = when (config.providerType) {
             TTSProviderType.OPENAI -> OpenAITTSProvider(client, config)
             TTSProviderType.OPENROUTER -> OpenRouterTTSProvider(client, config)
             TTSProviderType.MOCK -> MockTTSProvider()
             else -> throw UnsupportedOperationException("TTS Provider ${config.providerType} not implemented yet")
+        }
+
+        return if (config.useCache) {
+            CachingTTSProvider(
+                delegate = baseProvider,
+                cacheDir = File(".audio_cache")
+            )
+        } else {
+            baseProvider
         }
     }
 }
