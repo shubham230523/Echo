@@ -1,14 +1,17 @@
 package com.shubhamthorat.echo.server.generation
 
+import com.shubhamthorat.echo.server.core.retryWithBackoff
 import com.shubhamthorat.echo.server.narration.NarrationService
 import kotlinx.coroutines.*
-import java.io.File
-import java.net.URI
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Service for managing the end-to-end audiobook generation job.
+ * Optimized with parallel processing and resilient retry logic.
  */
 class AudiobookGenerationService(
     private val narrationService: NarrationService,
@@ -16,6 +19,7 @@ class AudiobookGenerationService(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 ) {
     private val jobs = ConcurrentHashMap<String, AudiobookJobStatus>()
+    private val concurrencyLimit = 3 // Max parallel TTS calls
 
     fun startGenerationJob(
         documentId: String,
@@ -45,88 +49,78 @@ class AudiobookGenerationService(
         val chapters = jobStatus.inputs
         val voiceId = jobStatus.voiceId
         val speed = jobStatus.speed
+        
+        val completedCount = AtomicInteger(jobStatus.completedChapters)
+        val currentResults = Collections.synchronizedList(jobStatus.results.toMutableList())
+        val currentFailures = Collections.synchronizedList(jobStatus.failedChapters.toMutableList())
 
         scope.launch {
             try {
                 updateJobStatus(jobId) { it.copy(status = "PROCESSING", errorMessage = null) }
                 
-                val currentResults = jobStatus.results.toMutableList()
-                val currentFailures = jobStatus.failedChapters.toMutableList()
+                val semaphore = Semaphore(concurrencyLimit)
                 
-                chapters.forEachIndexed { index, chapter ->
-                    // Skip if already completed in a previous run
-                    if (currentResults.any { it.chapterId == chapter.id && it.status == "COMPLETED" }) {
-                        return@forEachIndexed
-                    }
-
-                    updateJobStatus(jobId) { 
-                        it.copy(
-                            currentStep = "Preparing narration",
-                            currentChapterIndex = index + 1,
-                            currentChapterTitle = chapter.title,
-                            progress = index.toFloat() / chapters.size
-                        ) 
-                    }
-
-                    try {
-                        // 1. Prepare Narration
-                        val prepared = narrationService.prepareNarration(chapter.originalText, "storytelling")
-                        
-                        updateJobStatus(jobId) { it.copy(currentStep = "Generating audio") }
-
-                        // 2. Generate Audio
-                        val generationResult = generationService.generateChapterAudio(
-                            chapterId = chapter.id,
-                            narrationText = prepared.preparedText,
-                            voiceId = voiceId,
-                            speed = speed
-                        )
-
-                        if (generationResult.status == "FAILED") {
-                            throw Exception(generationResult.errorMessage ?: "TTS Failure")
+                val tasks = chapters.map { chapter ->
+                    async {
+                        // Skip if already completed
+                        if (currentResults.any { it.chapterId == chapter.id && it.status == "COMPLETED" }) {
+                            return@async
                         }
 
-                        currentResults.add(generationResult)
-                        // Remove from failures if it was there
-                        currentFailures.removeAll { it.chapterId == chapter.id }
-                        
-                        updateJobStatus(jobId) { 
-                            it.copy(
-                                completedChapters = currentResults.size,
-                                results = currentResults,
-                                failedChapters = currentFailures,
-                                storagePath = it.storagePath ?: generationResult.audioUrl?.let { url -> 
-                                    try { File(URI(url)).parentFile.absolutePath } catch (e: Exception) { null }
-                                },
-                                progress = (index + 1).toFloat() / chapters.size
-                            ) 
+                        semaphore.withPermit {
+                            try {
+                                retryWithBackoff(maxRetries = 3) {
+                                    println("🔊 Processing Chapter: ${chapter.title}")
+                                    
+                                    // 1. Prepare Narration
+                                    val prepared = narrationService.prepareNarration(chapter.originalText, "storytelling")
+                                    
+                                    // 2. Generate Audio
+                                    val generationResult = generationService.generateChapterAudio(
+                                        chapterId = chapter.id,
+                                        narrationText = prepared.preparedText,
+                                        voiceId = voiceId,
+                                        speed = speed
+                                    )
+
+                                    if (generationResult.status == "FAILED") {
+                                        throw Exception(generationResult.errorMessage ?: "TTS Failure")
+                                    }
+
+                                    currentResults.add(generationResult)
+                                    currentFailures.removeAll { it.chapterId == chapter.id }
+                                    
+                                    val done = completedCount.incrementAndGet()
+                                    updateJobStatus(jobId) { 
+                                        it.copy(
+                                            completedChapters = done,
+                                            results = currentResults.toList(),
+                                            failedChapters = currentFailures.toList(),
+                                            progress = done.toFloat() / chapters.size,
+                                            currentChapterTitle = chapter.title
+                                        ) 
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                val retryCount = (currentFailures.find { it.chapterId == chapter.id }?.retryCount ?: 0) + 1
+                                currentFailures.add(FailedChapterRecord(
+                                    chapterId = chapter.id,
+                                    title = chapter.title,
+                                    reason = e.message ?: "Unknown",
+                                    retryCount = retryCount
+                                ))
+                                updateJobStatus(jobId) { it.copy(failedChapters = currentFailures.toList()) }
+                            }
                         }
-                    } catch (e: Exception) {
-                        val retryCount = (currentFailures.find { it.chapterId == chapter.id }?.retryCount ?: 0) + 1
-                        val failure = FailedChapterRecord(
-                            chapterId = chapter.id,
-                            title = chapter.title,
-                            reason = e.message ?: "Unknown",
-                            retryCount = retryCount
-                        )
-                        currentFailures.removeAll { it.chapterId == chapter.id }
-                        currentFailures.add(failure)
-                        
-                        updateJobStatus(jobId) { 
-                            it.copy(
-                                failedChapters = currentFailures,
-                                status = "FAILED",
-                                errorMessage = "Failed at chapter '${chapter.title}': ${e.message}"
-                            ) 
-                        }
-                        // Stop sequential processing on error
-                        return@launch
                     }
                 }
 
+                tasks.awaitAll()
+
+                val finalStatus = if (currentFailures.isNotEmpty()) "PARTIALLY_COMPLETED" else "COMPLETED"
                 updateJobStatus(jobId) { 
                     it.copy(
-                        status = "COMPLETED",
+                        status = finalStatus,
                         currentStep = "Finished",
                         progress = 1.0f
                     ) 
@@ -144,7 +138,8 @@ class AudiobookGenerationService(
 
     fun retryJob(jobId: String): Boolean {
         val status = jobs[jobId] ?: return false
-        if (status.status != "FAILED") return false
+        // Allow retry if failed or partially completed
+        if (status.status != "FAILED" && status.status != "PARTIALLY_COMPLETED") return false
         
         runJob(jobId)
         return true
@@ -179,7 +174,6 @@ data class AudiobookJobStatus(
     val results: List<ChapterGenerationStatus> = emptyList(),
     val failedChapters: List<FailedChapterRecord> = emptyList(),
     val errorMessage: String? = null,
-    // Store inputs for retry support
     val inputs: List<ChapterInput> = emptyList(),
     val voiceId: String = "",
     val speed: Float = 1.0f
