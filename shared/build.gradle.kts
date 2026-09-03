@@ -100,12 +100,14 @@ kotlin {
         jvmMain.get().dependsOn(roomEnabledMain)
 
         if (!isDesktopOnly) {
-            val iosMain by getting {
+            val iosMain by creating {
                 dependsOn(roomEnabledMain)
                 dependencies {
                     implementation(libs.ktor.client.darwin)
                 }
             }
+            iosArm64Main.get().dependsOn(iosMain)
+            iosSimulatorArm64Main.get().dependsOn(iosMain)
         }
 
         androidMain.dependencies {
