@@ -1,54 +1,45 @@
 # Echo 🎧
 
-### AI-Powered Audiobook Creator
+### Local-First AI-Powered Document Analyzer & Narrator
 
-**Echo** transforms static documents like PDFs into immersive, chapterized audiobooks using a sophisticated multi-agent AI pipeline.
+**Echo** transforms static documents like PDFs into immersive, chapterized audiobooks and interactive knowledge bases using a sophisticated, fully local AI pipeline.
 
-Instead of basic Text-to-Speech (TTS), Echo uses "LangGraph-style" intelligent workflows to understand document structure, prepare natural narrative text, detect dialogue, and validate audio quality.
+Unlike traditional apps that rely on expensive cloud APIs, Echo runs **Large Language Models (LLMs)** and **Neural Text-to-Speech (TTS)** directly on your device, ensuring maximum privacy and offline availability.
 
-> **Turn any document into a professional, structured audiobook experience.**
+> **Turn any document into a private, professional audiobook experience.**
 
 ## 🌐 Live Demo
 You can try the web version of Echo here: [**shubham230523.github.io/Echo**](https://shubham230523.github.io/Echo/)
 
 ## ✨ Key Capabilities
 
-*   **Intelligent Document Analysis**: Uses a parallelized multi-agent workflow to scan large PDFs, detect narrative chapters, and extract metadata like title and author.
-*   **Narrative Preparation**: AI agents transform raw PDF text (often filled with page numbers and headers) into clean, narration-ready prose.
-*   **Parallel Audio Generation**: Optimized "fan-out" generation that produces multiple chapter audio files simultaneously with automatic retry logic and exponential backoff.
-*   **High-Fidelity Simulation**: Includes a "Total Mock" mode for development that simulates the entire AI pipeline locally, allowing for end-to-end testing without API costs.
-*   **Persistent Caching**: Intelligent "Record & Replay" caching for both AI responses and generated audio, ensuring you never pay for the same request twice.
+*   **Local-First AI Processing**: Privacy-centric analysis using on-device models. Your data never leaves your device.
+*   **Intelligent Local RAG**: Uses Retrieval-Augmented Generation to analyze large PDFs locally. It indexes your documents into a local vector store for instant, accurate Q&A.
+*   **On-Device Neural TTS**: Generates high-quality, natural-sounding audio using neural voices (Piper/VITS) running locally via Sherpa-ONNX.
+*   **Cross-Platform Seamlessness**: A unified experience across Android, iOS, Desktop, and Web built with a single Kotlin codebase.
+*   **On-Demand Model Management**: Smart model downloader that keeps the app binary small by retrieving optimized AI weights (Llama, Gemma, etc.) only when needed.
 *   **Adaptive Audio Player**: A modern, responsive playback interface built with Compose Multiplatform that handles everything from mobile screens to desktop window resizing.
-
-## 🤖 AI Multi-Agent Pipeline
-
-Echo employs a node-based state machine architecture to process books at scale:
-
-1.  **Extract Node**: Rapid PDF text extraction.
-2.  **Batch Analysis Agents**: Parallel workers that analyze 50-page chunks of the book simultaneously.
-3.  **Reconciliation Node**: Merges overlapping batch results into a seamless, ordered chapter list.
-4.  **Narration Agent**: Refines text for high-quality storytelling.
-5.  **Generation Engine**: Resilient TTS orchestration with independent chapter retries.
 
 ## 🛠️ Technology Stack
 
-### **Client (Cross-Platform)**
-*   **Kotlin Multiplatform (KMP)**: Shared business logic across all platforms.
-*   **Compose Multiplatform (CMP)**: Declarative, responsive UI for Android, iOS, and Desktop.
-*   **Voyager**: Multiplatform navigation.
-*   **Koin**: Dependency injection.
-*   **Ktor Client**: Resilient networking.
-*   **Kotlin Coroutines & Flow**: High-concurrency reactive programming.
+### **AI & Machine Learning**
+*   **Sherpa-ONNX**: The high-performance engine powering local LLM inference and TTS.
+*   **ONNX Runtime**: Cross-platform acceleration for AI models.
+*   **Local RAG Pipeline**: Custom Kotlin implementation for document chunking, embedding generation (BGE-small), and semantic search.
 
-### **Server (Backend)**
-*   **Ktor Server**: High-performance asynchronous Kotlin framework.
-*   **Apache PDFBox**: Industrial-grade PDF processing.
-*   **jaudiotagger**: Audio metadata and validation.
+### **Cross-Platform Core (KMP)**
+*   **Kotlin Multiplatform (KMP)**: 95% shared business logic across all platforms.
+*   **Compose Multiplatform (CMP)**: Declarative UI for Android, iOS, Desktop, and Web.
+*   **Room Multiplatform**: Unified database for document metadata and vector storage.
+*   **Ktor Client**: Asynchronous networking for model downloads and API communication.
+*   **Okio**: High-performance, cross-platform file system access.
+*   **Koin**: Modern dependency injection for multiplatform projects.
 
-### **AI & Cloud**
-*   **OpenRouter & OpenAI**: Integration with state-of-the-art LLMs (like Nemotron-3.5) for structural analysis.
-*   **Advanced TTS Engines**: Support for flux-tts and other high-quality neural voice models.
-*   **LangGraph-Inspired Workflows**: Custom state-machine orchestration for complex multi-step AI tasks.
+### **Platform Specifics**
+*   **Android**: Hardware acceleration via NNAPI.
+*   **iOS**: Native PDF extraction via PDFKit and hardware acceleration via CoreML.
+*   **Desktop (JVM)**: Industrial-grade PDF processing via Apache PDFBox.
+*   **Web (Wasm/JS)**: High-performance Kotlin/Wasm target for browser execution.
 
 ## 🏗️ Architecture
 
@@ -57,22 +48,22 @@ Echo employs a node-based state machine architecture to process books at scale:
                    │
       ┌────────────┼────────────┐
       │            │            │
-  Document       AI Agent      Audio
-  Workflow       Workflow     Workflow
-  (Parallel)    (Caching)    (Resilient)
+  Local RAG     Local TTS    Model Mgr
+  (Analysis)   (Narration)  (Downloads)
       │            │            │
       └────────────┼────────────┘
                    │
-             Echo Backend
+           ONNX Runtime Engine
                    │
-      LLMs (OpenRouter) / TTS Engines
+      Local Models (Llama / BGE / VITS)
 ```
 
 ## 🌐 Target Platforms
 *   **Android** (Mobile & Tablet)
 *   **iOS** (iPhone & iPad)
 *   **Desktop** (Windows, macOS, Linux)
+*   **Web** (Browser via Wasm/JS)
 
 ---
 
-**Echo is a cutting-edge exploration of how multi-agent AI orchestration can redefine how we consume written content, making every book accessible as a high-quality audio experience.**
+**Echo is a cutting-edge exploration of how on-device AI can redefine how we consume written content, making every book accessible as a private, high-quality audio experience.**
