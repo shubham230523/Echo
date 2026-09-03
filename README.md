@@ -8,6 +8,9 @@ Instead of basic Text-to-Speech (TTS), Echo uses "LangGraph-style" intelligent w
 
 > **Turn any document into a professional, structured audiobook experience.**
 
+## 🌐 Live Demo
+You can try the web version of Echo here: [**shubham230523.github.io/Echo**](https://shubham230523.github.io/Echo/)
+
 ## ✨ Key Capabilities
 
 *   **Intelligent Document Analysis**: Uses a parallelized multi-agent workflow to scan large PDFs, detect narrative chapters, and extract metadata like title and author.
