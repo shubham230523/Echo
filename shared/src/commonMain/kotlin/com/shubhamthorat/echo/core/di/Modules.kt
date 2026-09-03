@@ -5,8 +5,6 @@ import com.shubhamthorat.echo.core.network.HttpClientFactory
 import com.shubhamthorat.echo.core.network.NetworkConfig
 import com.shubhamthorat.echo.data.remote.EchoApi
 import com.shubhamthorat.echo.data.remote.KtorEchoApi
-import com.shubhamthorat.echo.data.db.EchoDatabase
-import com.shubhamthorat.echo.data.db.getRoomDatabase
 import com.shubhamthorat.echo.data.repository.*
 import com.shubhamthorat.echo.domain.repository.*
 import com.shubhamthorat.echo.domain.usecase.CleanDocumentTextUseCase
@@ -40,18 +38,7 @@ val networkModule = module {
     single<EchoApi> { KtorEchoApi(get()) }
 }
 
-val dataModule = module {
-    single { getRoomDatabase(get()) }
-    single { get<EchoDatabase>().documentDao() }
-    single { get<EchoDatabase>().chapterDao() }
-    single { get<EchoDatabase>().audiobookDao() }
-    
-    single<DocumentRepository> { RoomDocumentRepository(get()) }
-    single<ChapterRepository> { RoomChapterRepository(get()) }
-    single<AudiobookRepository> { RoomAudiobookRepository(get()) }
-    single<RemoteGenerationRepository> { ApiRemoteGenerationRepository(get()) }
-    single<SystemRepository> { ApiSystemRepository(get()) }
-}
+expect val dataModule: Module
 
 val domainModule = module {
     factory { CleanDocumentTextUseCase() }

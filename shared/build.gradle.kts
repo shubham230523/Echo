@@ -59,32 +59,46 @@ kotlin {
     }
     
     sourceSets {
-        commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.materialIcons)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.kotlinx.datetime)
-            implementation(libs.navigation.compose)
-            implementation(libs.androidx.room.runtime)
-            implementation(libs.androidx.sqlite.bundled)
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.client.logging)
-            implementation(libs.ktor.serialization.json)
-            implementation("com.squareup.okio:okio:3.10.2")
-            
-            api(libs.koin.core)
-            api(libs.koin.compose)
-            api(libs.koin.compose.viewmodel)
+        val commonMain by getting {
+            dependencies {
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.components.resources)
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.compose.materialIcons)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
+                implementation(libs.androidx.lifecycle.runtimeCompose)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
+                implementation(libs.navigation.compose)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.client.logging)
+                implementation(libs.ktor.serialization.json)
+                implementation("com.squareup.okio:okio:3.10.2")
+                
+                api(libs.koin.core)
+                api(libs.koin.compose)
+                api(libs.koin.compose.viewmodel)
+            }
         }
+
+        // Intermediate source set for targets that support Room (No Wasm)
+        val roomEnabledMain by creating {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(libs.androidx.room.runtime)
+                implementation(libs.androidx.sqlite.bundled)
+            }
+        }
+
+        androidMain.get().dependsOn(roomEnabledMain)
+        iosMain.get().dependsOn(roomEnabledMain)
+        jvmMain.get().dependsOn(roomEnabledMain)
+
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
@@ -110,7 +124,7 @@ kotlin {
         
         if (!isDesktopOnly) {
             val iosMain by creating {
-                dependsOn(commonMain.get())
+                dependsOn(commonMain)
                 dependencies {
                     implementation(libs.ktor.client.darwin)
                 }
@@ -133,5 +147,4 @@ dependencies {
     add("kspJvm", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
-    add("kspWasmJs", libs.androidx.room.compiler)
 }
