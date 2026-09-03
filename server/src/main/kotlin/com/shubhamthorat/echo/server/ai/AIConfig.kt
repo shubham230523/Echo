@@ -31,13 +31,24 @@ data class AIConfig(
             }
 
             val apiKey = getProperty("AI_API_KEY")
-            val useCache = getProperty("AI_USE_CACHE")?.toBoolean() ?: true
+            
+            // Simulation check: if keys are exactly the dummy ones, force MOCK
+            val isDummyKey = apiKey == "ai-api-key" || apiKey == "dummy"
+            val finalType = if (isDummyKey) AIProviderType.MOCK else type
+            
+            // Bypass caching (restoring b2fb240 behavior) when using real keys
+            // Default useCache to true ONLY for dummy/mock mode or if explicitly requested
+            val useCache = if (!isDummyKey) {
+                getProperty("AI_USE_CACHE")?.toBoolean() ?: false 
+            } else {
+                getProperty("AI_USE_CACHE")?.toBoolean() ?: true
+            }
 
             return AIConfig(
-                providerType = type,
+                providerType = finalType,
                 apiKey = apiKey,
-                baseUrl = getProperty("AI_BASE_URL"), // Mainly for Ollama or custom OpenAI endpoints
-                modelName = getProperty("AI_MODEL_NAME") ?: when (type) {
+                baseUrl = getProperty("AI_BASE_URL"),
+                modelName = getProperty("AI_MODEL_NAME") ?: when (finalType) {
                     AIProviderType.GEMINI -> "gemini-1.5-pro"
                     AIProviderType.OLLAMA -> "llama3"
                     AIProviderType.OPENAI_COMPATIBLE -> "gpt-4o"

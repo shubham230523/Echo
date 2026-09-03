@@ -12,6 +12,7 @@ class TTSProviderFactory(
 ) {
 
     fun create(): TTSProvider {
+        println("🏗️ Initializing TTS Provider: ${config.providerType} (Model: ${config.voiceModel})")
         val baseProvider = when (config.providerType) {
             TTSProviderType.OPENAI -> OpenAITTSProvider(client, config)
             TTSProviderType.OPENROUTER -> OpenRouterTTSProvider(client, config)

@@ -25,15 +25,16 @@ class CachingTTSProvider(
 
         if (cacheFile.exists()) {
             println("🟢 AUDIO CACHE HIT: ${cacheFile.name}")
-            // In a real app, we might store duration/format in the metaFile
+            // Duration and format should ideally be cached too, but 0.0 is a safe fallback for now
             return TTSResult(
                 audioFileUri = cacheFile.toURI().toString(),
-                durationSeconds = 0.0, // Should be extracted from file or cached meta
+                durationSeconds = 0.0, 
                 format = "MP3"
             )
         }
 
-        println("🌐 AUDIO CACHE MISS: Calling remote TTS provider...")
+        val providerName = delegate.javaClass.simpleName
+        println("📡 AUDIO CACHE MISS -> Calling $providerName...")
         val result = delegate.synthesize(request)
         
         try {

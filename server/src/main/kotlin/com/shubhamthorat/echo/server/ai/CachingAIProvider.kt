@@ -72,11 +72,12 @@ class CachingAIProvider(
         val cacheFile = File(cacheDir, "${category}_$hash.json")
 
         if (cacheFile.exists()) {
-            println("♻️ AI CACHE HIT [$category]: ${cacheFile.name}")
+            println("🟢 AI CACHE HIT [$category]")
             return json.decodeFromString<T>(cacheFile.readText())
         }
 
-        println("🌐 AI CACHE MISS [$category]: Calling remote provider...")
+        val providerName = delegate.javaClass.simpleName
+        println("📡 AI CACHE MISS [$category] -> Calling $providerName...")
         val response = fetch()
         
         try {

@@ -12,6 +12,7 @@ class AIProviderFactory(
 ) {
 
     fun create(): AIProvider {
+        println("🏗️ Initializing AI Provider: ${config.providerType} (Model: ${config.modelName})")
         val baseProvider = when (config.providerType) {
             AIProviderType.GEMINI -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OLLAMA -> OpenAICompatibleAIProvider(client, config)

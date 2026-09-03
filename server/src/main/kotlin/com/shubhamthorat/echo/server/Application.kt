@@ -47,6 +47,11 @@ fun Application.module() {
     val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
     val ttsProvider = TTSProviderFactory(httpClient, Config.tts).create()
     
+    if (Config.ai.providerType == com.shubhamthorat.echo.server.ai.AIProviderType.MOCK && 
+        Config.tts.providerType == com.shubhamthorat.echo.server.voice.TTSProviderType.MOCK) {
+        println("🛠️  RUNNING IN TOTAL MOCK MODE - No API credits will be used.")
+    }
+    
     val dialogueService = DialogueService(aiProvider)
     val pronunciationService = PronunciationService(aiProvider)
     val narrationService = NarrationService(aiProvider)

@@ -2,189 +2,74 @@
 
 ### AI-Powered Audiobook Creator
 
-**Echo** transforms documents such as PDFs into immersive, chapterized audiobooks using AI.
+**Echo** transforms static documents like PDFs into immersive, chapterized audiobooks using a sophisticated multi-agent AI pipeline.
 
-Instead of simply converting text to speech, Echo understands the structure of a document, prepares it for natural narration, generates audio, and validates the final audiobook.
+Instead of basic Text-to-Speech (TTS), Echo uses "LangGraph-style" intelligent workflows to understand document structure, prepare natural narrative text, detect dialogue, and validate audio quality.
 
-> **Turn documents into immersive audiobooks.**
+> **Turn any document into a professional, structured audiobook experience.**
 
-## 🚧 Development Status
+## ✨ Key Capabilities
 
-**Echo is currently under active development.**
+*   **Intelligent Document Analysis**: Uses a parallelized multi-agent workflow to scan large PDFs, detect narrative chapters, and extract metadata like title and author.
+*   **Narrative Preparation**: AI agents transform raw PDF text (often filled with page numbers and headers) into clean, narration-ready prose.
+*   **Parallel Audio Generation**: Optimized "fan-out" generation that produces multiple chapter audio files simultaneously with automatic retry logic and exponential backoff.
+*   **High-Fidelity Simulation**: Includes a "Total Mock" mode for development that simulates the entire AI pipeline locally, allowing for end-to-end testing without API costs.
+*   **Persistent Caching**: Intelligent "Record & Replay" caching for both AI responses and generated audio, ensuring you never pay for the same request twice.
+*   **Adaptive Audio Player**: A modern, responsive playback interface built with Compose Multiplatform that handles everything from mobile screens to desktop window resizing.
 
-The initial version focuses on the core experience of converting a PDF into a structured audiobook using AI.
+## 🤖 AI Multi-Agent Pipeline
 
-## ✨ How It Works
+Echo employs a node-based state machine architecture to process books at scale:
 
-```text
-PDF / Document
-      ↓
-Document Analysis
-      ↓
-AI Structure Detection
-      ↓
-Chapter Detection & Cleanup
-      ↓
-Narration Preparation
-      ↓
-Voice Selection
-      ↓
-Audio Generation
-      ↓
-AI Quality Check
-      ↓
-Chapterized Audiobook
-```
-
-## 🤖 AI Capabilities
-
-Echo is designed to use AI for more than basic text-to-speech:
-
-* **Document Agent** — Understands document structure.
-* **Narration Agent** — Converts extracted content into narration-ready text.
-* **Dialogue Detection** — Identifies conversations and speakers.
-* **Pronunciation Assistance** — Handles difficult names and terminology.
-* **Voice Agent** — Helps determine appropriate narration voices.
-* **Quality Agent** — Checks generated audio against the source content.
-* **Recovery Agent** — Identifies problematic sections and supports regeneration.
-
-## 🎧 Core Features
-
-### Document Processing
-
-* PDF import
-* Text extraction
-* Chapter detection
-* Header/footer cleanup
-* Content organization
-* Narration-ready text
-
-### Audiobook Creation
-
-* AI narration preparation
-* Voice selection
-* Chapter-based audio generation
-* Generation progress
-* Audio quality validation
-* Failed-section regeneration
-
-### Audiobook Player
-
-* Chapter navigation
-* Play/pause
-* Seek
-* Playback progress
-* Resume playback
-* Background playback
-* Local audiobook library
+1.  **Extract Node**: Rapid PDF text extraction.
+2.  **Batch Analysis Agents**: Parallel workers that analyze 50-page chunks of the book simultaneously.
+3.  **Reconciliation Node**: Merges overlapping batch results into a seamless, ordered chapter list.
+4.  **Narration Agent**: Refines text for high-quality storytelling.
+5.  **Generation Engine**: Resilient TTS orchestration with independent chapter retries.
 
 ## 🛠️ Technology Stack
 
-### Application
+### **Client (Cross-Platform)**
+*   **Kotlin Multiplatform (KMP)**: Shared business logic across all platforms.
+*   **Compose Multiplatform (CMP)**: Declarative, responsive UI for Android, iOS, and Desktop.
+*   **Voyager**: Multiplatform navigation.
+*   **Koin**: Dependency injection.
+*   **Ktor Client**: Resilient networking.
+*   **Kotlin Coroutines & Flow**: High-concurrency reactive programming.
 
-* **Kotlin Multiplatform (KMP)**
-* **Compose Multiplatform (CMP)**
-* Kotlin Coroutines
-* Kotlin Flow
-* Koin
-* Ktor Client
-* kotlinx.serialization
+### **Server (Backend)**
+*   **Ktor Server**: High-performance asynchronous Kotlin framework.
+*   **Apache PDFBox**: Industrial-grade PDF processing.
+*   **jaudiotagger**: Audio metadata and validation.
 
-### Storage
-
-* SQLite / Room KMP
-* Local file storage
-
-### AI & Backend
-
-* AI provider abstraction
-* Ollama Cloud
-* Gemma
-* OpenAI gpt-oss
-* Gemini
-* Backend services for document processing and AI workloads
-
-### Platform Audio
-
-Platform-specific audio implementations will be used where required for reliable playback and background audio.
-
-## 🌐 Target Platforms
-
-Echo is designed as a cross-platform application using Kotlin Multiplatform and Compose Multiplatform.
-
-Initial targets:
-
-* Android
-* iOS
-* Desktop
-
-Additional platform support may be introduced as the project evolves.
-
-## 🎯 MVP
-
-The first version will focus on:
-
-```text
-Upload PDF
-    ↓
-Analyze Document
-    ↓
-Detect Chapters
-    ↓
-Prepare Narration
-    ↓
-Select Voice
-    ↓
-Generate Audio
-    ↓
-Quality Check
-    ↓
-Listen
-```
-
-Heavy document processing, AI inference, and audio generation will be handled through backend services where appropriate.
-
-## 🗺️ Roadmap
-
-* [x] Project concept
-* [ ] CMP application foundation
-* [ ] Responsive cross-platform UI
-* [ ] PDF import
-* [ ] Document analysis
-* [ ] Chapter detection
-* [ ] AI narration preparation
-* [ ] Voice configuration
-* [ ] Audiobook generation
-* [ ] Chapterized audio
-* [ ] Audiobook player
-* [ ] Background playback
-* [ ] AI audio quality validation
-* [ ] Automatic error recovery
-* [ ] Local audiobook library
+### **AI & Cloud**
+*   **OpenRouter & OpenAI**: Integration with state-of-the-art LLMs (like Nemotron-3.5) for structural analysis.
+*   **Advanced TTS Engines**: Support for flux-tts and other high-quality neural voice models.
+*   **LangGraph-Inspired Workflows**: Custom state-machine orchestration for complex multi-step AI tasks.
 
 ## 🏗️ Architecture
 
 ```text
-                 Echo
-                   │
-          Compose Multiplatform
-                   │
-          Kotlin Multiplatform
+                 Echo (KMP/CMP)
                    │
       ┌────────────┼────────────┐
       │            │            │
   Document       AI Agent      Audio
-  Pipeline       Pipeline     Pipeline
+  Workflow       Workflow     Workflow
+  (Parallel)    (Caching)    (Resilient)
       │            │            │
       └────────────┼────────────┘
                    │
-                Backend
+             Echo Backend
                    │
-          AI / TTS / Storage
+      LLMs (OpenRouter) / TTS Engines
 ```
 
-The architecture emphasizes shared business logic through KMP while keeping platform-specific functionality isolated behind abstractions.
+## 🌐 Target Platforms
+*   **Android** (Mobile & Tablet)
+*   **iOS** (iPhone & iPad)
+*   **Desktop** (Windows, macOS, Linux)
 
 ---
 
-**Echo is an experimental project exploring how AI agents can transform static documents into high-quality, personalized audiobook experiences.**
+**Echo is a cutting-edge exploration of how multi-agent AI orchestration can redefine how we consume written content, making every book accessible as a high-quality audio experience.**

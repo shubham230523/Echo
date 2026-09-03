@@ -4,8 +4,6 @@ import com.shubhamthorat.echo.server.ai.*
 import com.shubhamthorat.echo.server.api.dto.v1.GetChaptersResponse.ChapterDto
 import com.shubhamthorat.echo.server.core.retryWithBackoff
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.text.PDFTextStripper
 import java.io.File
@@ -70,8 +68,6 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
             val fullTextBuilder = StringBuilder()
             val pageCount = document.numberOfPages
             
-            // Parallel extraction could be done here if we used multiple PDFBox instances, 
-            // but PDFBox document is not thread-safe. We'll extract sequentially but fast.
             for (page in 1..pageCount) {
                 stripper.startPage = page
                 stripper.endPage = page
@@ -83,9 +79,9 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
             // Project Gutenberg / Boilerplate cleanup
             val cleanedText = cleanupText(fullText)
 
-            // Smaller chunks for higher reliability on free AI models
-            val chunkSize = 15 
-            val overlap = 2
+            // Reverting to b2fb240 parameters: 50 pages per chunk with 5 page overlap
+            val chunkSize = 50
+            val overlap = 5
             val chunks = mutableListOf<TextChunk>()
             
             val charsPerPage = if (pageCount > 0) cleanedText.length / pageCount else cleanedText.length
@@ -117,49 +113,46 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
     }
 
     private suspend fun batchAnalysisNode(state: AnalysisState): AnalysisState = coroutineScope {
-        println("🤖 Node: BatchAnalysisNode - Processing ${state.chunks.size} chunks with controlled parallelism")
+        println("🤖 Node: BatchAnalysisNode - Processing ${state.chunks.size} chunks in parallel")
         
-        // 1. Separate Metadata Extraction (Lightweight call on first 5 pages)
-        val metadataSample = state.fullText.take(15000)
-        val metadata = retryWithBackoff(maxRetries = 2) {
-            println("  Agent [Metadata]: Extracting book info...")
-            aiProvider.analyzeDocumentStructure(DocumentStructureRequest(fullText = metadataSample))
-        }
-
-        // 2. Controlled Parallel Chapter Detection
-        val aiSemaphore = Semaphore(2) // Max 2 concurrent AI requests for free tier
-        
-        val deferredChapters = state.chunks.map { chunk ->
+        val deferredChapters = state.chunks.mapIndexed { index, chunk ->
             async {
-                aiSemaphore.withPermit {
-                    retryWithBackoff(maxRetries = 3) {
-                        println("  Agent [${chunk.pageRange}]: Detecting chapters (Length: ${chunk.text.length})")
+                retryWithBackoff(maxRetries = 3) {
+                    println("  Agent $index: Analyzing pages ${chunk.pageRange}")
+                    // Reverting to b2fb240 logic: First chunk also gets the overall book metadata
+                    if (index == 0) {
+                        val response = aiProvider.analyzeDocumentStructure(
+                            DocumentStructureRequest(fullText = chunk.text)
+                        )
+                        // Adjust offsets back to global space
+                        val adjusted = response.chapters.map { it.copy(startIndex = it.startIndex + chunk.startIndex) }
+                        Triple(adjusted, response.title, response.author)
+                    } else {
                         val response = aiProvider.detectChapters(
                             ChapterDetectionRequest(fullText = chunk.text)
                         )
-                        response.chapters.map { it.copy(startIndex = it.startIndex + chunk.startIndex) }
+                        val adjusted = response.chapters.map { it.copy(startIndex = it.startIndex + chunk.startIndex) }
+                        Triple(adjusted, null, null)
                     }
                 }
             }
         }
 
         val results = deferredChapters.awaitAll()
-        val allChapters = results.flatten()
+        val allChapters = results.flatMap { it.first }
+        val title = results.firstOrNull { it.second != null }?.second ?: "Unknown Title"
+        val author = results.firstOrNull { it.third != null }?.third
 
         state.copy(
             rawChapters = allChapters,
-            title = metadata.title,
-            author = metadata.author,
-            type = metadata.type,
-            language = metadata.language
+            title = title,
+            author = author
         )
     }
 
     internal fun reconcileChaptersNode(state: AnalysisState): AnalysisState {
         println("🧩 Node: ReconcileChaptersNode")
         
-        // Remove duplicates caused by chunk overlaps
-        // We use a fuzzy similarity check on titles and proximity of start indices
         val reconciled = mutableListOf<DetectedChapter>()
         val sortedRaw = state.rawChapters.filter { it.startIndex != -1 }.sortedBy { it.startIndex }
 
@@ -170,17 +163,14 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
                 continue
             }
 
-            // If start indices are very close (within 1000 chars) AND titles are similar, skip
             val distance = chapter.startIndex - last.startIndex
             if (distance < 2000 && isSimilar(chapter.title, last.title)) {
-                // Keep the one with higher confidence or just the first one found
                 continue
             }
             
             reconciled.add(chapter)
         }
 
-        // Map to ChapterDto and slice content
         val finalChapters = reconciled.mapIndexed { index, chapter ->
             val nextStart = reconciled.getOrNull(index + 1)?.startIndex ?: state.fullText.length
             val content = state.fullText.substring(chapter.startIndex, nextStart).trim()
@@ -198,7 +188,6 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
     }
 
     private fun cleanupText(text: String): String {
-        // Project Gutenberg specific cleanup: Trim boilerplate
         val startMarkers = listOf("*** START OF", "PROJECT GUTENBERG EBOOK")
         val endMarkers = listOf("*** END OF", "END OF THE PROJECT GUTENBERG EBOOK")
         

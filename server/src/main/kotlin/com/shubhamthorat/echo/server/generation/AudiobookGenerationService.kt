@@ -19,7 +19,7 @@ class AudiobookGenerationService(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 ) {
     private val jobs = ConcurrentHashMap<String, AudiobookJobStatus>()
-    private val concurrencyLimit = 2 // Reduced for free tier reliability
+    private val concurrencyLimit = 3 // Restoring to b2fb240 state
 
     fun startGenerationJob(
         documentId: String,
