@@ -97,8 +97,16 @@ kotlin {
         }
 
         androidMain.get().dependsOn(roomEnabledMain)
-        iosMain.get().dependsOn(roomEnabledMain)
         jvmMain.get().dependsOn(roomEnabledMain)
+
+        if (!isDesktopOnly) {
+            val iosMain by getting {
+                dependsOn(roomEnabledMain)
+                dependencies {
+                    implementation(libs.ktor.client.darwin)
+                }
+            }
+        }
 
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
@@ -121,17 +129,6 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.pdfbox)
             }
-        }
-        
-        if (!isDesktopOnly) {
-            val iosMain by creating {
-                dependsOn(commonMain)
-                dependencies {
-                    implementation(libs.ktor.client.darwin)
-                }
-            }
-            iosArm64Main.get().dependsOn(iosMain)
-            iosSimulatorArm64Main.get().dependsOn(iosMain)
         }
 
         val wasmJsMain by getting {
