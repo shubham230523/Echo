@@ -27,6 +27,8 @@ navigation-compose = "2.9.2"
 pdfbox = "3.0.8"
 jaudiotagger = "3.0.1"
 androidx-media3 = "1.6.0"
+sherpa-onnx = "1.13.7"
+onnxruntime = "1.29.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -82,6 +84,11 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "androidx-media3" }
 androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "androidx-media3" }
+sherpaonnxandroid = { module = "com.github.k2-fsa:sherpa-onnx", version.ref = "sherpa-onnx" }
+sherpaonnxjvm = { module = "com.github.k2-fsa.sherpa-onnx:sherpa-onnx-jvm", version.ref = "sherpa-onnx" }
+sherpaonnxnativewin = { module = "com.github.k2-fsa.sherpa-onnx:sherpa-onnx-native-lib-win-x64", version.ref = "sherpa-onnx" }
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
+onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

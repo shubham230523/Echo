@@ -8,10 +8,12 @@ import com.shubhamthorat.echo.data.local.chapter.ChapterDao
 import com.shubhamthorat.echo.data.local.chapter.ChapterEntity
 import com.shubhamthorat.echo.data.local.document.DocumentDao
 import com.shubhamthorat.echo.data.local.document.DocumentEntity
+import com.shubhamthorat.echo.data.local.vector.VectorDao
+import com.shubhamthorat.echo.data.local.vector.VectorEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
-@Database(entities = [TestEntity::class, ChapterEntity::class, AudiobookEntity::class, DocumentEntity::class], version = 1)
+@Database(entities = [TestEntity::class, ChapterEntity::class, AudiobookEntity::class, DocumentEntity::class, VectorEntity::class], version = 1)
 @TypeConverters(Converters::class)
 @ConstructedBy(EchoDatabaseConstructor::class)
 abstract class EchoDatabase : RoomDatabase() {
@@ -19,6 +21,7 @@ abstract class EchoDatabase : RoomDatabase() {
     abstract fun chapterDao(): ChapterDao
     abstract fun audiobookDao(): AudiobookDao
     abstract fun documentDao(): DocumentDao
+    abstract fun vectorDao(): VectorDao
 }
 
 @Dao

@@ -54,6 +54,10 @@ kotlin {
     
     jvm()
     
+    js {
+        browser()
+    }
+    
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
@@ -120,6 +124,8 @@ kotlin {
             implementation(libs.androidx.media3.exoplayer)
             implementation(libs.androidx.media3.session)
             implementation(libs.androidx.media3.common)
+            implementation(libs.sherpa.onnx.android)
+            implementation(libs.onnxruntime.android)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -130,6 +136,9 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.pdfbox)
+                implementation(libs.sherpaonnxjvm)
+                implementation(libs.sherpaonnxnativewin)
+                implementation(libs.onnxruntime.jvm)
             }
         }
 
@@ -137,6 +146,10 @@ kotlin {
             dependencies {
                 implementation("io.ktor:ktor-client-js:${libs.versions.ktor.get()}")
             }
+        }
+
+        jsMain.dependencies {
+            implementation("io.ktor:ktor-client-js:${libs.versions.ktor.get()}")
         }
     }
 }

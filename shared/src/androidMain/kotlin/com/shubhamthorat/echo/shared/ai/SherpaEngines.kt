@@ -4,7 +4,7 @@ import android.content.res.AssetManager
 import com.k2fsa.sherpa.onnx.*
 
 class SherpaEmbeddingEngine(
-    private val assetManager: AssetManager,
+    private val assetManager: AssetManager?,
     private val modelPath: String,
     private val tokensPath: String
 ) : EmbeddingEngine {
@@ -17,7 +17,11 @@ class SherpaEmbeddingEngine(
             debug = true,
             provider = "cpu"
         )
-        OfflineTextEmbedding(assetManager, config)
+        if (assetManager != null) {
+            OfflineTextEmbedding(assetManager, config)
+        } else {
+            OfflineTextEmbedding(config)
+        }
     }
 
     override suspend fun getEmbedding(text: String): List<Float> {
@@ -26,7 +30,7 @@ class SherpaEmbeddingEngine(
 }
 
 class SherpaLlmEngine(
-    private val assetManager: AssetManager,
+    private val assetManager: AssetManager?,
     private val modelPath: String,
     private val tokensPath: String
 ) : LlmEngine {
@@ -39,7 +43,11 @@ class SherpaLlmEngine(
             maxContextSize = 1024,
             provider = "cpu"
         )
-        OfflineLlm(assetManager, config)
+        if (assetManager != null) {
+            OfflineLlm(assetManager, config)
+        } else {
+            OfflineLlm(config)
+        }
     }
 
     override suspend fun generate(prompt: String): String {
@@ -48,7 +56,7 @@ class SherpaLlmEngine(
 }
 
 class SherpaTtsEngine(
-    private val assetManager: AssetManager,
+    private val assetManager: AssetManager?,
     private val modelPath: String,
     private val lexiconPath: String,
     private val tokensPath: String,
@@ -66,7 +74,11 @@ class SherpaTtsEngine(
             numThreads = 4,
             debug = true
         )
-        OfflineTts(assetManager, config)
+        if (assetManager != null) {
+            OfflineTts(assetManager, config)
+        } else {
+            OfflineTts(config)
+        }
     }
 
     override suspend fun generateAudio(text: String): FloatArray {

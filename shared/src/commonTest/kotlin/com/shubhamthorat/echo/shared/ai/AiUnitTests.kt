@@ -1,5 +1,6 @@
 package com.shubhamthorat.echo.shared.ai
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,7 +18,7 @@ class AiUnitTests {
     }
 
     @Test
-    fun testVectorSearch() {
+    fun testVectorSearch() = runTest {
         val vectorStore = InMemoryVectorStore()
         val docId = "test.pdf"
         
@@ -27,14 +28,12 @@ class AiUnitTests {
             FloatVector(docId, "Chunk 3", listOf(0.0f, 0.0f, 1.0f))
         )
         
-        suspend fun runTest() {
-            vectorStore.addVectors(docId, vectors)
-            
-            val query = listOf(0.9f, 0.1f, 0.0f)
-            val results = vectorStore.search(query, topK = 1)
-            
-            assertEquals(1, results.size)
-            assertEquals("Chunk 1", results[0].text)
-        }
+        vectorStore.addVectors(docId, vectors)
+        
+        val query = listOf(0.9f, 0.1f, 0.0f)
+        val results = vectorStore.search(query, topK = 1)
+        
+        assertEquals(1, results.size)
+        assertEquals("Chunk 1", results[0].text)
     }
 }

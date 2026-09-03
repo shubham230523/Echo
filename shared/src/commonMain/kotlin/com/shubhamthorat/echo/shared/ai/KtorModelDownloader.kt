@@ -1,7 +1,6 @@
 package com.shubhamthorat.echo.shared.ai
 
 import io.ktor.client.*
-import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -9,9 +8,10 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okio.FileSystem
-import okio.Path
 import okio.Path.Companion.toPath
 import okio.buffer
+import okio.use
+import io.ktor.utils.io.core.*
 
 class KtorModelDownloader(
     private val httpClient: HttpClient,
@@ -24,36 +24,24 @@ class KtorModelDownloader(
         try {
             emit(DownloadProgress(modelType, 0f))
             
-            val response = httpClient.get(modelType.url) {
-                onDownload { bytesSentTotal, contentLength ->
-                    if (contentLength != null && contentLength > 0) {
-                        val progress = bytesSentTotal.toFloat() / contentLength
-                        // Emit progress, but maybe limit frequency if needed
-                    }
-                }
-            }
-
+            val response = httpClient.get(modelType.url)
+            
             if (response.status.isSuccess()) {
-                val channel = response.bodyAsChannel()
-                fileSystem.write(targetPath) {
-                    // This is a simplified way to write from channel to okio sink
-                    // In Ktor 3, we might need a more robust way to handle large streams
-                }
-                
-                // Re-implementing with a manual loop for better control and progress reporting
                 val contentLength = response.contentLength() ?: -1L
-                var bytesRead = 0L
+                var bytesReadTotal = 0L
+                val channel = response.bodyAsChannel()
                 
                 fileSystem.sink(targetPath).buffer().use { sink ->
                     while (!channel.isClosedForRead) {
-                        val packet = channel.readRemaining(8192)
-                        while (!packet.isEmpty) {
-                            val bytes = packet.readBytes()
-                            sink.write(bytes)
-                            bytesRead += bytes.size
-                            if (contentLength > 0) {
-                                emit(DownloadProgress(modelType, bytesRead.toFloat() / contentLength))
-                            }
+                        val buffer = ByteArray(8192)
+                        val bytesRead = channel.readAvailable(buffer)
+                        if (bytesRead == -1) break
+                        
+                        sink.write(buffer, 0, bytesRead)
+                        bytesReadTotal += bytesRead
+                        
+                        if (contentLength > 0) {
+                            emit(DownloadProgress(modelType, bytesReadTotal.toFloat() / contentLength))
                         }
                     }
                 }

@@ -7,3 +7,10 @@ interface EmbeddingEngine {
 interface LlmEngine {
     suspend fun generate(prompt: String): String
 }
+
+interface AudioGenerator {
+    /**
+     * Generates PCM audio samples from text.
+     */
+    suspend fun generateAudio(text: String): FloatArray
+}

@@ -18,7 +18,7 @@ class LocalAudiobookGenerator(
                 currentChapter = chapter.title
             ))
             
-            val audio = audioGenerator.generateAudio(chapter.content)
+            val audio = audioGenerator.generateAudio(chapter.narrationText)
             // TODO: Save PCM samples to a file (WAV/MP3)
         }
         

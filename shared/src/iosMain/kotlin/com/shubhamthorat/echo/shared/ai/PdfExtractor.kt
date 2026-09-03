@@ -6,7 +6,7 @@ import platform.PDFKit.*
 actual class PdfExtractor actual constructor() {
     actual suspend fun extractText(path: String): String {
         val url = NSURL.fileURLWithPath(path)
-        val document = PDFDocument(url = url)
-        return document?.string ?: ""
+        val document = PDFDocument(uRL = url)
+        return document?.string() ?: ""
     }
 }
