@@ -53,6 +53,11 @@ kotlin {
     
     jvm()
     
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
+    
     sourceSets {
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -113,6 +118,12 @@ kotlin {
             iosArm64Main.get().dependsOn(iosMain)
             iosSimulatorArm64Main.get().dependsOn(iosMain)
         }
+
+        val wasmJsMain by getting {
+            dependencies {
+                implementation("io.ktor:ktor-client-js:${libs.versions.ktor.get()}")
+            }
+        }
     }
 }
 
@@ -122,4 +133,5 @@ dependencies {
     add("kspJvm", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    add("kspWasmJs", libs.androidx.room.compiler)
 }
