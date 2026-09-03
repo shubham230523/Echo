@@ -8,11 +8,12 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.androidx.room)
 }
 
-room {
-    schemaDirectory("$projectDir/schemas")
+// Room manual configuration since the plugin doesn't support Wasm yet
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
 }
 
 kotlin {
