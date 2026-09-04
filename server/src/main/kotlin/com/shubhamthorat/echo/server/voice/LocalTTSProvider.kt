@@ -15,16 +15,22 @@ class LocalTTSProvider(
 
     private val ttsEngine: SherpaTtsEngine by lazy {
         // 1. Try manual path from config
-        val configPath = if (!config.voiceModel.contains("local-vits") && config.voiceModel.isNotBlank()) {
+        val configPath = if (config.voiceModel != "local-vits" && config.voiceModel.isNotBlank() && File(config.voiceModel).exists()) {
             config.voiceModel
         } else null
 
         // 2. Try ModelManager (auto-downloaded by app)
         val managerPath = modelManager?.getModelPath(ModelType.TTS)
         
-        val finalModelPath = configPath ?: managerPath ?: "vits.onnx"
+        // 3. Fallback to standard app location
+        val defaultPath = File(System.getProperty("user.home"), ".echo/models/vits.onnx").absolutePath
+        
+        val finalModelPath = configPath ?: managerPath ?: defaultPath
         val modelFile = File(finalModelPath)
-        val modelDir = modelFile.parentFile ?: File(".")
+        val modelDir = modelFile.parentFile ?: File(System.getProperty("user.home"), ".echo/models")
+        
+        println("🔊 Initializing Local TTS Engine:")
+        println("   Model: ${modelFile.absolutePath} (Exists: ${modelFile.exists()})")
         
         SherpaTtsEngine(
             modelPath = modelFile.absolutePath,

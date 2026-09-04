@@ -16,18 +16,21 @@ class LocalAIProvider(
 
     private val llmEngine: LlmEngine by lazy {
         // 1. Try manual path from config
-        val configPath = if (config.modelName != "local-qwen" && config.modelName.isNotBlank()) {
+        val configPath = if (config.modelName != "local-qwen" && config.modelName.isNotBlank() && File(config.modelName).exists()) {
             config.modelName
         } else null
 
         // 2. Try ModelManager (auto-downloaded by app)
         val managerPath = modelManager?.getModelPath(ModelType.LLM)
         
-        val finalModelPath = configPath ?: managerPath ?: "llama.onnx"
+        // 3. Fallback to default user home location
+        val userHomePath = File(System.getProperty("user.home"), ".echo/models/llama.onnx").absolutePath
+        
+        val finalModelPath = configPath ?: managerPath ?: userHomePath
         val modelFile = File(finalModelPath)
         
         // Find tokenizer in the same directory as the model
-        val modelDir = modelFile.parentFile ?: File(".")
+        val modelDir = modelFile.parentFile ?: File(System.getProperty("user.home"), ".echo/models")
         var tokensFile = File(modelDir, "tokenizer.model")
         if (!tokensFile.exists()) {
             tokensFile = File(modelDir, "tokens.txt") // Fallback

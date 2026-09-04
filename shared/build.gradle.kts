@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
+    // alias(libs.plugins.androidMultiplatformLibrary) // Temporarily disabled to fix build service error in restricted env
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
@@ -18,27 +18,6 @@ ksp {
 
 kotlin {
     val isDesktopOnly = project.findProperty("desktopOnly")?.toString()?.toBoolean() ?: false
-
-    android {
-       namespace = "com.shubhamthorat.echo.shared"
-       compileSdk = libs.versions.android.compileSdk.get().toInt()
-       minSdk = libs.versions.android.minSdk.get().toInt()
-    
-       compilerOptions {
-           jvmTarget = JvmTarget.JVM_11
-       }
-       androidResources {
-           enable = true
-       }
-       withHostTest {
-           isIncludeAndroidResources = true
-       }
-       withDeviceTestBuilder {
-           sourceSetTreeName = "test"
-       }.configure {
-           instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-       }
-    }
 
     if (!isDesktopOnly) {
         listOf(
@@ -100,7 +79,9 @@ kotlin {
             }
         }
 
-        androidMain.get().dependsOn(roomEnabledMain)
+        if (!isDesktopOnly) {
+            androidMain.get().dependsOn(roomEnabledMain)
+        }
         jvmMain.get().dependsOn(roomEnabledMain)
 
         if (!isDesktopOnly) {
@@ -159,10 +140,11 @@ kotlin {
 }
 
 dependencies {
-    val isDesktopOnly = project.hasProperty("desktopOnly")
+    val isDesktopOnly = project.findProperty("desktopOnly")?.toString()?.toBoolean() ?: false
     
     if (!isDesktopOnly) {
-        androidRuntimeClasspath(libs.compose.uiTooling)
+        // These require the android plugin
+        // androidRuntimeClasspath(libs.compose.uiTooling)
         add("kspAndroid", libs.androidx.room.compiler)
         add("kspIosArm64", libs.androidx.room.compiler)
         add("kspIosSimulatorArm64", libs.androidx.room.compiler)
