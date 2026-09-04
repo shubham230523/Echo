@@ -155,24 +155,37 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
         
         val reconciled = mutableListOf<DetectedChapter>()
         val sortedRaw = state.rawChapters.filter { it.startIndex != -1 }.sortedBy { it.startIndex }
+        
+        // TOC is usually in the first 15% of the book
+        val tocThreshold = (state.fullText.length * 0.15).toInt()
 
         for (chapter in sortedRaw) {
-            val last = reconciled.lastOrNull()
-            if (last == null) {
-                reconciled.add(chapter)
-                continue
-            }
-
-            val distance = chapter.startIndex - last.startIndex
-            if (distance < 2000 && isSimilar(chapter.title, last.title)) {
-                continue
-            }
+            val existingIndex = reconciled.indexOfFirst { isSimilar(it.title, chapter.title) }
             
-            reconciled.add(chapter)
+            if (existingIndex != -1) {
+                val existing = reconciled[existingIndex]
+                val distance = chapter.startIndex - existing.startIndex
+                
+                // 1. Overlap Case: If headers are very close (< 5000 chars), keep the first
+                if (distance < 5000) {
+                    continue
+                } 
+                
+                // 2. TOC vs Narrative Case: 
+                // Only replace if the existing one is in the "TOC Zone" and the new one is outside it.
+                if (existing.startIndex < tocThreshold && chapter.startIndex >= tocThreshold) {
+                    println("  🔄 Replacing TOC entry for '${chapter.title}' (${existing.startIndex}) with Narrative start (${chapter.startIndex})")
+                    reconciled[existingIndex] = chapter
+                }
+            } else {
+                reconciled.add(chapter)
+            }
         }
+        
+        val finalSorted = reconciled.sortedBy { it.startIndex }
 
-        val finalChapters = reconciled.mapIndexed { index, chapter ->
-            val nextStart = reconciled.getOrNull(index + 1)?.startIndex ?: state.fullText.length
+        val finalChapters = finalSorted.mapIndexed { index, chapter ->
+            val nextStart = finalSorted.getOrNull(index + 1)?.startIndex ?: state.fullText.length
             val content = state.fullText.substring(chapter.startIndex, nextStart).trim()
             
             ChapterDto(
@@ -216,8 +229,23 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
     }
 
     private fun isSimilar(t1: String, t2: String): Boolean {
-        val n1 = t1.lowercase().replace(Regex("[^a-z0-9]"), "")
-        val n2 = t2.lowercase().replace(Regex("[^a-z0-9]"), "")
-        return n1 == n2 || n1.contains(n2) || n2.contains(n1)
+        val n1 = t1.lowercase().trim()
+        val n2 = t2.lowercase().trim()
+        if (n1 == n2) return true
+        
+        // Extract the "identifier" part (e.g. "chapter 1", "chapter i")
+        val idRegex = Regex("(?i)^(chapter|section|part)\\s+(\\d+|[ivxlc]+)")
+        val id1 = idRegex.find(n1)?.value
+        val id2 = idRegex.find(n2)?.value
+        
+        // If both have identifiers (like Chapter 1), they MUST match exactly
+        if (id1 != null && id2 != null) {
+            return id1 == id2
+        }
+        
+        // Fallback for non-standard titles: exact normalized match
+        val clean1 = n1.replace(Regex("[^a-z0-9]"), "")
+        val clean2 = n2.replace(Regex("[^a-z0-9]"), "")
+        return clean1 == clean2
     }
 }

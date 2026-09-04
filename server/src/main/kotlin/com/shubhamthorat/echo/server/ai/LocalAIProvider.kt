@@ -50,16 +50,40 @@ class LocalAIProvider(
         val prompt = PromptTemplates.documentStructurePrompt(request.fullText)
         val response = llmEngine.generate(prompt)
         
-        return try {
+        val llmResult = try {
             JsonExtractor.extract<DocumentStructureResponse>(response)
         } catch (e: Exception) {
-            DocumentStructureResponse(
-                title = "Unknown (Local)",
-                type = "UNKNOWN",
-                language = "en",
-                chapters = emptyList()
-            )
+            null
         }
+
+        // Heuristic Fallback for Title/Author if LLM failed or returned empty
+        val text = request.fullText
+        val llmTitle = llmResult?.title
+        val finalTitle = if (llmTitle.isNullOrBlank()) {
+            text.lines().firstOrNull { it.isNotBlank() }?.trim()?.take(100) ?: "Unknown Document"
+        } else llmTitle
+
+        val llmAuthor = llmResult?.author
+        val finalAuthor = if (llmAuthor.isNullOrBlank()) {
+            if (text.contains("by ", ignoreCase = true)) {
+                val idx = text.indexOf("by ", ignoreCase = true)
+                text.substring(idx + 3, (idx + 50).coerceAtMost(text.length)).lines().firstOrNull()?.trim()
+            } else "Unknown Author"
+        } else llmAuthor
+
+        val llmChapters = llmResult?.chapters
+        val finalChapters = if (llmChapters.isNullOrEmpty()) {
+            println("🔍 Local LLM returned no chapters for structure. Using Regex fallback...")
+            performRegexChapterDetection(text)
+        } else llmChapters
+
+        return DocumentStructureResponse(
+            title = finalTitle,
+            author = finalAuthor,
+            type = llmResult?.type ?: "BOOK",
+            language = llmResult?.language ?: "en",
+            chapters = finalChapters
+        )
     }
 
     override suspend fun detectChapters(request: ChapterDetectionRequest): ChapterDetectionResponse {
@@ -75,54 +99,81 @@ class LocalAIProvider(
         // Robust Local Fallback: If LLM failed or returned no chapters, use Regex detection
         if (llmResult.chapters.isEmpty()) {
             println("🔍 Local LLM returned no chapters. Using Regex fallback...")
-            val text = request.fullText
-            val chapterRegex = Regex("(?i)^(Chapter|Section|Part)\\s+(\\d+|[IVXLC]+).*", RegexOption.MULTILINE)
-            val matches = chapterRegex.findAll(text).toList()
-            
-            val detected = if (matches.isEmpty()) {
-                listOf(
-                    DetectedChapter(
-                        title = "Main Content",
-                        index = 1,
-                        openingText = text.take(200).replace("\n", " "),
-                        startIndex = 0,
-                        endIndex = text.length,
-                        confidence = 0.5f
-                    )
-                )
-            } else {
-                matches.mapIndexed { index, match ->
-                    val nextStart = if (index + 1 < matches.size) matches[index + 1].range.first else text.length
-                    val title = match.value.trim()
-                    
-                    DetectedChapter(
-                        title = title,
-                        index = index + 1,
-                        openingText = text.substring(match.range.first, (match.range.first + 200).coerceAtMost(text.length)).replace("\n", " "),
-                        startIndex = match.range.first,
-                        endIndex = nextStart,
-                        confidence = 0.9f
-                    )
-                }
-            }
-            return ChapterDetectionResponse(chapters = detected)
+            return ChapterDetectionResponse(chapters = performRegexChapterDetection(request.fullText))
         }
 
         return llmResult
+    }
+
+    private fun performRegexChapterDetection(text: String): List<DetectedChapter> {
+        // Broadened regex to catch:
+        // 1. Chapter/Section/Part 1 or I
+        // 2. I. Title (Roman numeral start)
+        // 3. 1. Title (Numeric start)
+        val chapterRegex = Regex("(?i)^((Chapter|Section|Part)\\s+(\\d+|[IVXLC]+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN).*)|(^[IVXLC]+\\.\\s+.*)|(^\\d+\\.\\s+.*)", RegexOption.MULTILINE)
+        val matches = chapterRegex.findAll(text).toList()
+        
+        val detected = mutableListOf<DetectedChapter>()
+        
+        if (matches.isEmpty()) {
+            detected.add(
+                DetectedChapter(
+                    title = "Main Content",
+                    index = 1,
+                    openingText = text.take(200).replace("\n", " "),
+                    startIndex = 0,
+                    endIndex = text.length,
+                    confidence = 0.5f
+                )
+            )
+        } else {
+            matches.map { match ->
+                val nextMatch = matches.getOrNull(matches.indexOf(match) + 1)
+                val nextStart = nextMatch?.range?.first ?: text.length
+                val title = match.value.trim().take(100)
+                
+                // Lowered threshold to 150 characters to catch short/intro chapters
+                val length = nextStart - match.range.first
+                if (length > 150) { 
+                    detected.add(
+                        DetectedChapter(
+                            title = title,
+                            index = detected.size + 1,
+                            openingText = text.substring(match.range.first, (match.range.first + 200).coerceAtMost(text.length)).replace("\n", " "),
+                            startIndex = match.range.first,
+                            endIndex = nextStart,
+                            confidence = 0.9f
+                        )
+                    )
+                }
+            }
+        }
+        
+        if (detected.isEmpty() && text.length > 200) {
+            detected.add(DetectedChapter("Main Content", 1, text.take(200), 0, text.length, 0.5f))
+        }
+        
+        return detected
     }
 
     override suspend fun prepareNarration(request: NarrationPreparationRequest): NarrationPreparationResponse {
         val prompt = PromptTemplates.narrationPreparationPrompt(request.text, request.style)
         val response = llmEngine.generate(prompt)
         
-        return try {
+        val result = try {
             JsonExtractor.extract<NarrationPreparationResponse>(response)
         } catch (e: Exception) {
+            null
+        }
+
+        return if (result == null || result.preparedText.isBlank()) {
             NarrationPreparationResponse(
                 preparedText = request.text,
                 estimatedDurationSeconds = (request.text.length / 15.0),
-                notes = "Local AI transformation failed, using original text."
+                notes = "Local AI fallback: Using original text."
             )
+        } else {
+            result
         }
     }
 
@@ -130,14 +181,20 @@ class LocalAIProvider(
         val prompt = PromptTemplates.dialogueDetectionPrompt(request.text)
         val response = llmEngine.generate(prompt)
         
-        return try {
+        val result = try {
             JsonExtractor.extract<DialogueDetectionResponse>(response)
         } catch (e: Exception) {
+            null
+        }
+
+        return if (result == null || result.segments.isEmpty()) {
             DialogueDetectionResponse(
                 segments = listOf(
                     DialogueSegment(request.text, "Narrator", false)
                 )
             )
+        } else {
+            result
         }
     }
 
