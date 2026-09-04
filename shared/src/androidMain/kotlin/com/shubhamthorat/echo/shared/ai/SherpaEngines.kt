@@ -6,7 +6,7 @@ import com.k2fsa.sherpa.onnx.*
 class SherpaEmbeddingEngine(
     private val assetManager: AssetManager?,
     private val modelPath: String,
-    private val tokensPath: String
+    private val tokensPath: String,
 ) : EmbeddingEngine {
 
     private val embedder: OfflineTextEmbedding by lazy {
@@ -17,11 +17,7 @@ class SherpaEmbeddingEngine(
             debug = true,
             provider = "cpu"
         )
-        if (assetManager != null) {
-            OfflineTextEmbedding(assetManager, config)
-        } else {
-            OfflineTextEmbedding(config)
-        }
+        OfflineTextEmbedding(assetManager, config)
     }
 
     override suspend fun getEmbedding(text: String): List<Float> {
@@ -32,22 +28,20 @@ class SherpaEmbeddingEngine(
 class SherpaLlmEngine(
     private val assetManager: AssetManager?,
     private val modelPath: String,
-    private val tokensPath: String
+    private val tokensPath: String,
 ) : LlmEngine {
 
     private val llm: OfflineLlm by lazy {
         val config = OfflineLlmConfig(
-            model = modelPath,
-            tokens = tokensPath,
-            numThreads = 4,
-            maxContextSize = 1024,
-            provider = "cpu"
+            model = OfflineLlmModelConfig(
+                qwen2 = modelPath,
+                tokens = tokensPath,
+                numThreads = 4,
+                device = "cpu"
+            ),
+            maxNumToken = 1024
         )
-        if (assetManager != null) {
-            OfflineLlm(assetManager, config)
-        } else {
-            OfflineLlm(config)
-        }
+        OfflineLlm(assetManager, config)
     }
 
     override suspend fun generate(prompt: String): String {
@@ -60,29 +54,27 @@ class SherpaTtsEngine(
     private val modelPath: String,
     private val lexiconPath: String,
     private val tokensPath: String,
-    private val dataDir: String
+    private val dataDir: String,
 ) : AudioGenerator {
 
     private val tts: OfflineTts by lazy {
         val config = OfflineTtsConfig(
-            model = OfflineTtsVitsModelConfig(
-                model = modelPath,
-                lexicon = lexiconPath,
-                tokens = tokensPath,
-                dataDir = dataDir
-            ),
-            numThreads = 4,
-            debug = true
+            model = OfflineTtsModelConfig(
+                vits = OfflineTtsVitsModelConfig(
+                    model = modelPath,
+                    lexicon = lexiconPath,
+                    tokens = tokensPath,
+                    dataDir = dataDir
+                ),
+                numThreads = 4,
+                debug = true
+            )
         )
-        if (assetManager != null) {
-            OfflineTts(assetManager, config)
-        } else {
-            OfflineTts(config)
-        }
+        OfflineTts(assetManager, config)
     }
 
     override suspend fun generateAudio(text: String): FloatArray {
-        val audio = tts.generate(text, sid = 0, speed = 1.0f)
+        val audio = tts.generate(text, 0, 1.0f)
         return audio.samples
     }
 }

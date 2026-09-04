@@ -1,6 +1,7 @@
 package com.shubhamthorat.echo.server.ai
 
 import io.ktor.client.*
+import com.shubhamthorat.echo.shared.ai.ModelManager
 import java.io.File
 
 /**
@@ -11,13 +12,14 @@ class AIProviderFactory(
     private val config: AIConfig
 ) {
 
-    fun create(): AIProvider {
+    fun create(modelManager: ModelManager? = null): AIProvider {
         println("🏗️ Initializing AI Provider: ${config.providerType} (Model: ${config.modelName})")
         val baseProvider = when (config.providerType) {
             AIProviderType.GEMINI -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OLLAMA -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OPENAI_COMPATIBLE -> OpenAICompatibleAIProvider(client, config)
             AIProviderType.OPENROUTER -> OpenRouterAIProvider(client, config)
+            AIProviderType.LOCAL -> LocalAIProvider(config, modelManager)
             AIProviderType.MOCK -> MockAIProvider()
         }
 

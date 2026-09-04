@@ -13,7 +13,7 @@ import com.shubhamthorat.echo.data.local.vector.VectorEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
-@Database(entities = [TestEntity::class, ChapterEntity::class, AudiobookEntity::class, DocumentEntity::class, VectorEntity::class], version = 1)
+@Database(entities = [TestEntity::class, ChapterEntity::class, AudiobookEntity::class, DocumentEntity::class, VectorEntity::class], version = 2)
 @TypeConverters(Converters::class)
 @ConstructedBy(EchoDatabaseConstructor::class)
 abstract class EchoDatabase : RoomDatabase() {
@@ -45,5 +45,6 @@ fun getRoomDatabase(
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
+        .fallbackToDestructiveMigration(true)
         .build()
 }

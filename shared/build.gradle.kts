@@ -17,7 +17,28 @@ ksp {
 }
 
 kotlin {
-    val isDesktopOnly = project.hasProperty("desktopOnly")
+    val isDesktopOnly = project.findProperty("desktopOnly")?.toString()?.toBoolean() ?: false
+
+    android {
+       namespace = "com.shubhamthorat.echo.shared"
+       compileSdk = libs.versions.android.compileSdk.get().toInt()
+       minSdk = libs.versions.android.minSdk.get().toInt()
+    
+       compilerOptions {
+           jvmTarget = JvmTarget.JVM_11
+       }
+       androidResources {
+           enable = true
+       }
+       withHostTest {
+           isIncludeAndroidResources = true
+       }
+       withDeviceTestBuilder {
+           sourceSetTreeName = "test"
+       }.configure {
+           instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+       }
+    }
 
     if (!isDesktopOnly) {
         listOf(
@@ -30,38 +51,17 @@ kotlin {
             }
         }
         
-        android {
-           namespace = "com.shubhamthorat.echo.shared"
-           compileSdk = libs.versions.android.compileSdk.get().toInt()
-           minSdk = libs.versions.android.minSdk.get().toInt()
-        
-           compilerOptions {
-               jvmTarget = JvmTarget.JVM_11
-           }
-           androidResources {
-               enable = true
-           }
-           withHostTest {
-               isIncludeAndroidResources = true
-           }
-           withDeviceTestBuilder {
-               sourceSetTreeName = "test"
-           }.configure {
-               instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-           }
+        js {
+            browser()
+        }
+
+        @OptIn(ExperimentalWasmDsl::class)
+        wasmJs {
+            browser()
         }
     }
     
     jvm()
-    
-    js {
-        browser()
-    }
-    
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-    }
     
     sourceSets {
         val commonMain by getting {
@@ -114,18 +114,20 @@ kotlin {
             iosSimulatorArm64Main.get().dependsOn(iosMain)
         }
 
-        androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.uiTooling)
-            implementation(libs.kotlinx.coroutines.android)
-            implementation(libs.koin.android)
-            implementation(libs.itext.core)
-            implementation(libs.ktor.client.cio)
-            implementation(libs.androidx.media3.exoplayer)
-            implementation(libs.androidx.media3.session)
-            implementation(libs.androidx.media3.common)
-            implementation(libs.sherpa.onnx.android)
-            implementation(libs.onnxruntime.android)
+        if (!isDesktopOnly) {
+            androidMain.dependencies {
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.compose.uiTooling)
+                implementation(libs.kotlinx.coroutines.android)
+                implementation(libs.koin.android)
+                implementation(libs.itext.core)
+                implementation(libs.ktor.client.cio)
+                implementation(libs.androidx.media3.exoplayer)
+                implementation(libs.androidx.media3.session)
+                implementation(libs.androidx.media3.common)
+                implementation(libs.sherpaOnnxAndroid)
+                implementation(libs.onnxruntime.android)
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -136,28 +138,35 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.pdfbox)
-                implementation(libs.sherpaonnxjvm)
-                implementation(libs.sherpaonnxnativewin)
+                implementation(libs.sherpaOnnxJvm)
+                implementation(libs.sherpaOnnxNativeWin64)
                 implementation(libs.onnxruntime.jvm)
             }
         }
 
-        val wasmJsMain by getting {
-            dependencies {
+        if (!isDesktopOnly) {
+            val wasmJsMain by getting {
+                dependencies {
+                    implementation("io.ktor:ktor-client-js:${libs.versions.ktor.get()}")
+                }
+            }
+
+            jsMain.dependencies {
                 implementation("io.ktor:ktor-client-js:${libs.versions.ktor.get()}")
             }
-        }
-
-        jsMain.dependencies {
-            implementation("io.ktor:ktor-client-js:${libs.versions.ktor.get()}")
         }
     }
 }
 
 dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
-    add("kspAndroid", libs.androidx.room.compiler)
+    val isDesktopOnly = project.hasProperty("desktopOnly")
+    
+    if (!isDesktopOnly) {
+        androidRuntimeClasspath(libs.compose.uiTooling)
+        add("kspAndroid", libs.androidx.room.compiler)
+        add("kspIosArm64", libs.androidx.room.compiler)
+        add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    }
+    
     add("kspJvm", libs.androidx.room.compiler)
-    add("kspIosArm64", libs.androidx.room.compiler)
-    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }

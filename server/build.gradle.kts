@@ -12,6 +12,7 @@ application {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.content.negotiation)
@@ -28,6 +29,8 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.pdfbox)
     implementation(libs.jaudiotagger)
+    implementation(libs.sherpaOnnxJvm)
+    implementation("com.squareup.okio:okio:3.9.0")
 
     testImplementation(libs.kotlin.test)
 }

@@ -22,6 +22,10 @@ import com.shubhamthorat.echo.server.generation.AudiobookGenerationService
 import com.shubhamthorat.echo.server.voice.MockVoiceProvider
 import com.shubhamthorat.echo.server.voice.TTSProviderFactory
 import com.shubhamthorat.echo.server.voice.VoiceService
+import com.shubhamthorat.echo.shared.ai.JvmModelManager
+import com.shubhamthorat.echo.shared.ai.KtorModelDownloader
+import okio.FileSystem
+import java.io.File
 
 fun main() {
     println("🚀 Starting Echo Backend Server on ${Config.host}:${Config.port}...")
@@ -43,9 +47,13 @@ fun Application.module() {
             socketTimeoutMillis = 1_800_000 // 30 minutes
         }
     }
+
+    val modelManager = JvmModelManager(
+        KtorModelDownloader(httpClient, FileSystem.SYSTEM, File(System.getProperty("user.home"), ".echo/models").absolutePath)
+    )
     
-    val aiProvider = AIProviderFactory(httpClient, Config.ai).create()
-    val ttsProvider = TTSProviderFactory(httpClient, Config.tts).create()
+    val aiProvider = AIProviderFactory(httpClient, Config.ai).create(modelManager)
+    val ttsProvider = TTSProviderFactory(httpClient, Config.tts).create(modelManager)
     
     if (Config.ai.providerType == com.shubhamthorat.echo.server.ai.AIProviderType.MOCK && 
         Config.tts.providerType == com.shubhamthorat.echo.server.voice.TTSProviderType.MOCK) {

@@ -8,6 +8,7 @@ enum class TTSProviderType {
     GOOGLE,
     ELEVENLABS,
     OPENROUTER,
+    LOCAL,
     MOCK
 }
 
@@ -32,9 +33,9 @@ data class TTSConfig(
 
             val apiKey = getProperty("TTS_API_KEY")
             
-            // Simulation check: if keys are exactly the dummy ones, force MOCK
+            // Simulation check: if keys are exactly the dummy ones and not using LOCAL, force MOCK
             val isDummyKey = apiKey == "tts-api-key" || apiKey == "dummy"
-            val finalType = if (isDummyKey) TTSProviderType.MOCK else type
+            val finalType = if (isDummyKey && type != TTSProviderType.LOCAL) TTSProviderType.MOCK else type
             
             // Bypass caching when using real keys
             val useCache = if (!isDummyKey) {
@@ -51,6 +52,7 @@ data class TTSConfig(
                     TTSProviderType.OPENAI -> "tts-1"
                     TTSProviderType.ELEVENLABS -> "eleven_monolingual_v1"
                     TTSProviderType.OPENROUTER -> "deepgram/flux-tts:free"
+                    TTSProviderType.LOCAL -> "local-vits"
                     else -> "default"
                 },
                 useCache = useCache
