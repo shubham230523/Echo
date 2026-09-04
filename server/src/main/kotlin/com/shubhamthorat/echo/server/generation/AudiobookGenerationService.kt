@@ -80,7 +80,22 @@ class AudiobookGenerationService(
                                         chapterId = chapter.id,
                                         narrationText = prepared.preparedText,
                                         voiceId = voiceId,
-                                        speed = speed
+                                        speed = speed,
+                                        onProgress = { chapterProgress, step ->
+                                            updateJobStatus(jobId) { 
+                                                // Calculate fine-grained total progress
+                                                // We use the already completed chapters + partial progress of this one
+                                                // Note: Since 3 chapters run in parallel, this is an approximation
+                                                val baseProgress = completedCount.get().toFloat() / chapters.size
+                                                val addedProgress = (chapterProgress / chapters.size)
+                                                
+                                                it.copy(
+                                                    currentChapterTitle = chapter.title,
+                                                    currentStep = step,
+                                                    progress = (baseProgress + addedProgress).coerceAtMost(0.99f)
+                                                )
+                                            }
+                                        }
                                     )
 
                                     if (generationResult.status == "FAILED") {

@@ -20,7 +20,11 @@ object Config {
     }
 
     private fun getProperty(key: String): String? {
-        return System.getenv(key) ?: localProperties.getProperty(key)
+        val value = System.getenv(key) ?: localProperties.getProperty(key)
+        if (key.contains("PROVIDER") || key.contains("MODEL")) {
+            println("⚙️ Config: $key = $value")
+        }
+        return value
     }
 
     val port = getProperty("PORT")?.toInt() ?: 8080

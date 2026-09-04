@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /**
@@ -80,6 +81,7 @@ class GenerationViewModel(
                 when (statusResult) {
                     is AppResult.Success -> {
                         val progress = statusResult.data
+                        println("📉 Polling Status: ${progress.status} | Progress: ${progress.progress} | Step: ${progress.currentStep}")
                         updateUiWithProgress(progress)
 
                         if (progress.status == "COMPLETED") {
@@ -123,6 +125,7 @@ class GenerationViewModel(
 
     private fun saveFinalAudiobook(audiobookId: String) {
         val document = currentAnalysisRepository.currentDocument.value ?: return
+        val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())
         
         viewModelScope.launch {
             audiobookRepository.insertAudiobook(
@@ -134,8 +137,8 @@ class GenerationViewModel(
                     coverImagePath = null,
                     totalDurationSeconds = 0, // Should be sum of chapters
                     chapterCount = currentAnalysisRepository.chapters.value.size,
-                    createdAt = Instant.fromEpochMilliseconds(0),
-                    updatedAt = Instant.fromEpochMilliseconds(0),
+                    createdAt = now,
+                    updatedAt = now,
                     status = AudiobookStatus.READY
                 )
             )
@@ -159,6 +162,7 @@ class GenerationViewModel(
             "PENDING" -> GenerationStatus.IDLE
             "PROCESSING" -> GenerationStatus.GENERATING_AUDIO
             "COMPLETED" -> GenerationStatus.COMPLETED
+            "PARTIALLY_COMPLETED" -> GenerationStatus.COMPLETED
             "FAILED" -> GenerationStatus.ERROR
             else -> GenerationStatus.IDLE
         }

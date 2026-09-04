@@ -8,6 +8,7 @@ enum class TTSProviderType {
     GOOGLE,
     ELEVENLABS,
     OPENROUTER,
+    DEEPGRAM,
     LOCAL,
     MOCK
 }
@@ -52,6 +53,7 @@ data class TTSConfig(
                     TTSProviderType.OPENAI -> "tts-1"
                     TTSProviderType.ELEVENLABS -> "eleven_monolingual_v1"
                     TTSProviderType.OPENROUTER -> "deepgram/flux-tts:free"
+                    TTSProviderType.DEEPGRAM -> "aura-asteria-en"
                     TTSProviderType.LOCAL -> "local-vits"
                     else -> "default"
                 },

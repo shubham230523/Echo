@@ -5,23 +5,43 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.awt.Desktop
+import java.net.URI
 
-class MockAudioPlayer(
+class JvmAudioPlayer(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 ) : AudioPlayer {
 
     private val _state = MutableStateFlow(AudioPlayerState())
     override val state: StateFlow<AudioPlayerState> = _state.asStateFlow()
 
+    private var currentUri: String? = null
     private var progressJob: Job? = null
 
     override suspend fun load(uri: String) {
+        currentUri = uri
         _state.update { 
             it.copy(
                 position = 0L,
-                duration = 5000L, // 5 seconds mock for previews
+                duration = 5000L, // 5 seconds placeholder
                 isCompleted = false
             ) 
+        }
+        
+        // Auto-open in system player for Desktop fallback
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                println("🔈 Opening audio in system player: $uri")
+                Desktop.getDesktop().browse(URI(uri))
+            } else {
+                // Windows specific fallback
+                val os = System.getProperty("os.name").lowercase()
+                if (os.contains("win")) {
+                    Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler $uri")
+                }
+            }
+        } catch (e: Exception) {
+            println("⚠️ Could not open system player: ${e.message}")
         }
     }
 

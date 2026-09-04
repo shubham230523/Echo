@@ -10,7 +10,15 @@ import java.util.*
 class CachingTTSProvider(
     private val delegate: TTSProvider,
     private val cacheDir: File
-) : TTSProvider {
+) : TTSProvider, VoiceProvider {
+
+    override suspend fun getAvailableVoices(): List<BackendVoice> {
+        return if (delegate is VoiceProvider) {
+            delegate.getAvailableVoices()
+        } else {
+            emptyList()
+        }
+    }
 
     init {
         if (!cacheDir.exists()) {

@@ -11,7 +11,13 @@ import java.util.*
 class LocalTTSProvider(
     private val config: TTSConfig,
     private val modelManager: ModelManager? = null
-) : TTSProvider {
+) : TTSProvider, VoiceProvider {
+
+    override suspend fun getAvailableVoices(): List<BackendVoice> {
+        return listOf(
+            BackendVoice("local-vits", "Local Neural Voice", "SHERPA", "en-US", "NEUTRAL", null)
+        )
+    }
 
     private val ttsEngine: SherpaTtsEngine by lazy {
         // 1. Try manual path from config

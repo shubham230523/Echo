@@ -190,8 +190,8 @@ fun EchoNavHost(
                     navController.popBackStack()
                 },
                 onFinishClick = {
-                    navController.navigate(Route.Library) {
-                        popUpTo(Route.Library) { inclusive = true }
+                    navController.navigate(Route.Player) {
+                        popUpTo(Route.Library) { inclusive = false }
                     }
                 }
             )
