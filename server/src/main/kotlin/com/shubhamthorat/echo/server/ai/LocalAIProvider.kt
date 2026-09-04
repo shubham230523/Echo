@@ -66,11 +66,49 @@ class LocalAIProvider(
         val prompt = PromptTemplates.chapterDetectionPrompt(request.fullText, request.structure)
         val response = llmEngine.generate(prompt)
         
-        return try {
+        val llmResult = try {
             JsonExtractor.extract<ChapterDetectionResponse>(response)
         } catch (e: Exception) {
             ChapterDetectionResponse(chapters = emptyList())
         }
+
+        // Robust Local Fallback: If LLM failed or returned no chapters, use Regex detection
+        if (llmResult.chapters.isEmpty()) {
+            println("🔍 Local LLM returned no chapters. Using Regex fallback...")
+            val text = request.fullText
+            val chapterRegex = Regex("(?i)^(Chapter|Section|Part)\\s+(\\d+|[IVXLC]+).*", RegexOption.MULTILINE)
+            val matches = chapterRegex.findAll(text).toList()
+            
+            val detected = if (matches.isEmpty()) {
+                listOf(
+                    DetectedChapter(
+                        title = "Main Content",
+                        index = 1,
+                        openingText = text.take(200).replace("\n", " "),
+                        startIndex = 0,
+                        endIndex = text.length,
+                        confidence = 0.5f
+                    )
+                )
+            } else {
+                matches.mapIndexed { index, match ->
+                    val nextStart = if (index + 1 < matches.size) matches[index + 1].range.first else text.length
+                    val title = match.value.trim()
+                    
+                    DetectedChapter(
+                        title = title,
+                        index = index + 1,
+                        openingText = text.substring(match.range.first, (match.range.first + 200).coerceAtMost(text.length)).replace("\n", " "),
+                        startIndex = match.range.first,
+                        endIndex = nextStart,
+                        confidence = 0.9f
+                    )
+                }
+            }
+            return ChapterDetectionResponse(chapters = detected)
+        }
+
+        return llmResult
     }
 
     override suspend fun prepareNarration(request: NarrationPreparationRequest): NarrationPreparationResponse {
