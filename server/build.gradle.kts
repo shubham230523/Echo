@@ -30,6 +30,8 @@ dependencies {
     implementation(libs.pdfbox)
     implementation(libs.jaudiotagger)
     implementation(libs.sherpaOnnxJvm)
+    implementation(libs.sherpaOnnxNativeWin64)
+    implementation(libs.onnxruntime.jvm)
     implementation("com.squareup.okio:okio:3.9.0")
 
     testImplementation(libs.kotlin.test)

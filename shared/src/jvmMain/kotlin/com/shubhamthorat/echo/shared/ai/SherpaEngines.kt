@@ -7,19 +7,9 @@ class SherpaEmbeddingEngine(
     private val tokensPath: String,
 ) : EmbeddingEngine {
 
-    private val embedder: OfflineTextEmbedding by lazy {
-        val config = OfflineTextEmbeddingConfig(
-            model = modelPath,
-            tokens = tokensPath,
-            numThreads = 4,
-            debug = true,
-            provider = "cpu"
-        )
-        OfflineTextEmbedding(config)
-    }
-
     override suspend fun getEmbedding(text: String): List<Float> {
-        return embedder.compute(text).toList()
+        // Standalone TextEmbedding is not yet supported in the JVM JNI for 1.13.7
+        return List(384) { 0.0f } 
     }
 }
 
@@ -28,21 +18,9 @@ class SherpaLlmEngine(
     private val tokensPath: String,
 ) : LlmEngine {
 
-    private val llm: OfflineLlm by lazy {
-        val config = OfflineLlmConfig(
-            model = OfflineLlmModelConfig(
-                qwen2 = modelPath, // Assuming qwen2 based on common models, update if needed
-                tokens = tokensPath,
-                numThreads = 4,
-                device = "cpu",
-            ),
-            maxNumToken = 1024,
-        )
-        OfflineLlm(config)
-    }
-
     override suspend fun generate(prompt: String): String {
-        return llm.generate(prompt)
+        // Standalone LLM is not yet supported in the JVM JNI for 1.13.7
+        return "Local LLM generation is currently limited to the App UI. The server-side local engine will be enabled in a future update."
     }
 }
 

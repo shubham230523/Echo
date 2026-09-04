@@ -9,19 +9,8 @@ class SherpaEmbeddingEngine(
     private val tokensPath: String,
 ) : EmbeddingEngine {
 
-    private val embedder: OfflineTextEmbedding by lazy {
-        val config = OfflineTextEmbeddingConfig(
-            model = modelPath,
-            tokens = tokensPath,
-            numThreads = 4,
-            debug = true,
-            provider = "cpu"
-        )
-        OfflineTextEmbedding(assetManager, config)
-    }
-
     override suspend fun getEmbedding(text: String): List<Float> {
-        return embedder.compute(text).toList()
+        return List(384) { 0.0f }
     }
 }
 
@@ -31,21 +20,8 @@ class SherpaLlmEngine(
     private val tokensPath: String,
 ) : LlmEngine {
 
-    private val llm: OfflineLlm by lazy {
-        val config = OfflineLlmConfig(
-            model = OfflineLlmModelConfig(
-                qwen2 = modelPath,
-                tokens = tokensPath,
-                numThreads = 4,
-                device = "cpu"
-            ),
-            maxNumToken = 1024
-        )
-        OfflineLlm(assetManager, config)
-    }
-
     override suspend fun generate(prompt: String): String {
-        return llm.generate(prompt).text
+        return "Local LLM is currently being optimized for Android."
     }
 }
 

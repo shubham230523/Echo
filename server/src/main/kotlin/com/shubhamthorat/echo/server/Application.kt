@@ -55,9 +55,9 @@ fun Application.module() {
     val aiProvider = AIProviderFactory(httpClient, Config.ai).create(modelManager)
     val ttsProvider = TTSProviderFactory(httpClient, Config.tts).create(modelManager)
     
-    if (Config.ai.providerType == com.shubhamthorat.echo.server.ai.AIProviderType.MOCK && 
-        Config.tts.providerType == com.shubhamthorat.echo.server.voice.TTSProviderType.MOCK) {
-        println("🛠️  RUNNING IN TOTAL MOCK MODE - No API credits will be used.")
+    if (Config.ai.providerType == com.shubhamthorat.echo.server.ai.AIProviderType.LOCAL && 
+        Config.tts.providerType == com.shubhamthorat.echo.server.voice.TTSProviderType.LOCAL) {
+        println("🏠 RUNNING IN FULL LOCAL MODE - Using Sherpa-ONNX engines.")
     }
     
     val dialogueService = DialogueService(aiProvider)

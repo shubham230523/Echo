@@ -16,7 +16,7 @@ class LocalAIProvider(
 
     private val llmEngine: LlmEngine by lazy {
         // 1. Try manual path from config
-        val configPath = if (!config.modelName.contains("local-qwen") && config.modelName.isNotBlank()) {
+        val configPath = if (config.modelName != "local-qwen" && config.modelName.isNotBlank()) {
             config.modelName
         } else null
 
@@ -25,15 +25,21 @@ class LocalAIProvider(
         
         val finalModelPath = configPath ?: managerPath ?: "llama.onnx"
         val modelFile = File(finalModelPath)
-        val tokensFile = File(modelFile.parentFile, "tokenizer.model")
         
-        if (!modelFile.exists()) {
-            println("⚠️ Local model file not found at ${modelFile.absolutePath}, using default llama.onnx")
+        // Find tokenizer in the same directory as the model
+        val modelDir = modelFile.parentFile ?: File(".")
+        var tokensFile = File(modelDir, "tokenizer.model")
+        if (!tokensFile.exists()) {
+            tokensFile = File(modelDir, "tokens.txt") // Fallback
         }
         
+        println("🤖 Initializing Local LLM Engine:")
+        println("   Model: ${modelFile.absolutePath} (Exists: ${modelFile.exists()})")
+        println("   Tokens: ${tokensFile.absolutePath} (Exists: ${tokensFile.exists()})")
+        
         SherpaLlmEngine(
-            modelPath = if (modelFile.exists()) modelFile.absolutePath else "llama.onnx",
-            tokensPath = if (tokensFile.exists()) tokensFile.absolutePath else "tokenizer.model"
+            modelPath = modelFile.absolutePath,
+            tokensPath = tokensFile.absolutePath
         )
     }
 
