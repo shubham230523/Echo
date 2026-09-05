@@ -163,6 +163,8 @@ class GenerationService(
         publicDir.mkdirs()
         val targetFile = File(publicDir, "${chapterId}.mp3")
         
+        println("📦 Finalizing Chapter Audio: ${targetFile.absolutePath}")
+        
         // Since OpenRouter returns MP3, we can concatenate the bytes directly
         targetFile.outputStream().use { output ->
             files.forEach { file ->

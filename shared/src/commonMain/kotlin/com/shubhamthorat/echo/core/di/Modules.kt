@@ -60,7 +60,7 @@ val featureModule = module {
     viewModel { VoiceSelectionViewModel(get(), get(), get()) }
     viewModel { GenerationViewModel(get(), get(), get(), get()) }
     viewModel { LocalGenerationViewModel(get(), get(), get(), get()) }
-    viewModel { PlayerViewModel() }
+    viewModel { PlayerViewModel(get(), get(), get()) }
     viewModel { SettingsViewModel() }
 }
 

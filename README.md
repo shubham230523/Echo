@@ -2,9 +2,9 @@
 
 ### Local-First AI-Powered Document Analyzer & Narrator
 
-**Echo** transforms static documents like PDFs into immersive, chapterized audiobooks and interactive knowledge bases using a sophisticated, fully local AI pipeline.
+**Echo** transforms static documents like PDFs into immersive, chapterized audiobooks and interactive knowledge bases using a sophisticated, fully local AI pipeline with optional high-performance cloud integrations.
 
-Unlike traditional apps that rely on expensive cloud APIs, Echo runs **Large Language Models (LLMs)** and **Neural Text-to-Speech (TTS)** directly on your device, ensuring maximum privacy and offline availability.
+Unlike traditional apps that rely solely on expensive cloud APIs, Echo prioritizes **Large Language Models (LLMs)** and **Neural Text-to-Speech (TTS)** directly on your device, ensuring maximum privacy and offline availability, while providing seamless fallbacks to providers like Deepgram and OpenRouter.
 
 > **Turn any document into a private, professional audiobook experience.**
 
@@ -13,33 +13,34 @@ You can try the web version of Echo here: [**shubham230523.github.io/Echo**](htt
 
 ## ✨ Key Capabilities
 
-*   **Local-First AI Processing**: Privacy-centric analysis using on-device models. Your data never leaves your device.
+*   **Local-First AI Processing**: Privacy-centric analysis using on-device models. Your data never leaves your device unless you opt for cloud providers.
 *   **Intelligent Local RAG**: Uses Retrieval-Augmented Generation to analyze large PDFs locally. It indexes your documents into a local vector store for instant, accurate Q&A.
-*   **On-Device Neural TTS**: Generates high-quality, natural-sounding audio using neural voices (Piper/VITS) running locally via Sherpa-ONNX.
-*   **Cross-Platform Seamlessness**: A unified experience across Android, iOS, Desktop, and Web built with a single Kotlin codebase.
+*   **Neural TTS (Local & Cloud)**:
+    *   **Local**: Natural-sounding audio using neural voices (Piper/VITS) running via Sherpa-ONNX.
+    *   **Cloud**: Premium high-fidelity voices via **Deepgram Aura** and **OpenRouter (Flux TTS)**.
+*   **Smart Chapter Detection**: Robust multi-agent analysis with Regex-based fallback and **Table of Contents (TOC) awareness** to accurately extract narrative content.
+*   **Large Chapter Support**: Automatic text chunking and sequential synthesis ensures even the longest chapters are processed without API payload limits.
 *   **On-Demand Model Management**: Smart model downloader that keeps the app binary small by retrieving optimized AI weights (Llama, Gemma, etc.) only when needed.
-*   **Adaptive Audio Player**: A modern, responsive playback interface built with Compose Multiplatform that handles everything from mobile screens to desktop window resizing.
+*   **Cross-Platform Adaptive UI**: A unified experience across Android, iOS, Desktop, and Web built with a single Kotlin codebase and Compose Multiplatform.
 
 ## 🛠️ Technology Stack
 
 ### **AI & Machine Learning**
-*   **Sherpa-ONNX**: The high-performance engine powering local LLM inference and TTS.
-*   **ONNX Runtime**: Cross-platform acceleration for AI models.
-*   **Local RAG Pipeline**: Custom Kotlin implementation for document chunking, embedding generation (BGE-small), and semantic search.
+*   **Sherpa-ONNX**: High-performance engine for local LLM inference and TTS.
+*   **Deepgram Aura**: Integrated high-speed, human-like cloud TTS.
+*   **OpenRouter**: Flexible gateway for accessing diverse LLM and TTS models.
+*   **ONNX Runtime**: Cross-platform acceleration for local AI models.
+
+### **Server & Infrastructure**
+*   **Ktor Server**: High-performance backend hosting static audio files and processing generation jobs.
+*   **Parallel Analysis**: Multi-agent chunked document processing for rapid analysis.
+*   **Static Audio Hosting**: Built-in streaming server for instant Desktop playback.
 
 ### **Cross-Platform Core (KMP)**
 *   **Kotlin Multiplatform (KMP)**: 95% shared business logic across all platforms.
-*   **Compose Multiplatform (CMP)**: Declarative UI for Android, iOS, Desktop, and Web.
+*   **Compose Multiplatform (CMP)**: Declarative UI for all targets.
 *   **Room Multiplatform**: Unified database for document metadata and vector storage.
 *   **Ktor Client**: Asynchronous networking for model downloads and API communication.
-*   **Okio**: High-performance, cross-platform file system access.
-*   **Koin**: Modern dependency injection for multiplatform projects.
-
-### **Platform Specifics**
-*   **Android**: Hardware acceleration via NNAPI.
-*   **iOS**: Native PDF extraction via PDFKit and hardware acceleration via CoreML.
-*   **Desktop (JVM)**: Industrial-grade PDF processing via Apache PDFBox.
-*   **Web (Wasm/JS)**: High-performance Kotlin/Wasm target for browser execution.
 
 ## 🏗️ Architecture
 
@@ -48,14 +49,14 @@ You can try the web version of Echo here: [**shubham230523.github.io/Echo**](htt
                    │
       ┌────────────┼────────────┐
       │            │            │
-  Local RAG     Local TTS    Model Mgr
-  (Analysis)   (Narration)  (Downloads)
+  Local RAG     TTS Engine   Model Mgr
+  (Analysis)   (Local/Cloud) (Downloads)
       │            │            │
       └────────────┼────────────┘
                    │
-           ONNX Runtime Engine
-                   │
-      Local Models (Llama / BGE / VITS)
+    ┌──────────────┴──────────────┐
+    │                             │
+Local Models (ONNX)         Cloud APIs (Deepgram/OR)
 ```
 
 ## 🌐 Target Platforms
@@ -66,4 +67,4 @@ You can try the web version of Echo here: [**shubham230523.github.io/Echo**](htt
 
 ---
 
-**Echo is a cutting-edge exploration of how on-device AI can redefine how we consume written content, making every book accessible as a private, high-quality audio experience.**
+**Echo is a cutting-edge exploration of how hybrid AI can redefine how we consume written content, making every book accessible as a private, high-quality audio experience.**
