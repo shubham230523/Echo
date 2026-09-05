@@ -93,13 +93,10 @@ class VoiceSelectionViewModel(
             _uiState.update { it.copy(previewingVoiceId = voiceId, isPreviewLoading = true) }
             
             try {
-                println("🔈 Loading preview URL: $previewUrl")
                 audioPlayer.load(previewUrl)
-                println("🔈 Playing preview...")
                 audioPlayer.play()
                 _uiState.update { it.copy(isPreviewLoading = false) }
             } catch (e: Exception) {
-                println("❌ Failed to play preview: ${e.message}")
                 _uiState.update { it.copy(previewingVoiceId = null, isPreviewLoading = false) }
             }
         }

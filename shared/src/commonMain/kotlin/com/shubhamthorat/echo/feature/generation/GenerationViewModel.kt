@@ -2,7 +2,6 @@ package com.shubhamthorat.echo.feature.generation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shubhamthorat.echo.core.audio.AudioPlayer
 import com.shubhamthorat.echo.core.result.AppResult
 import com.shubhamthorat.echo.domain.model.*
 import com.shubhamthorat.echo.domain.repository.AudiobookRepository
@@ -25,8 +24,7 @@ class GenerationViewModel(
     private val remoteRepository: RemoteGenerationRepository,
     private val currentAnalysisRepository: CurrentAnalysisRepository,
     private val audiobookRepository: AudiobookRepository,
-    private val chapterRepository: ChapterRepository,
-    private val audioPlayer: AudioPlayer
+    private val chapterRepository: ChapterRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenerationUiState())
@@ -82,7 +80,6 @@ class GenerationViewModel(
                 when (statusResult) {
                     is AppResult.Success -> {
                         val progress = statusResult.data
-                        println("📉 Polling Status: ${progress.status} | Progress: ${progress.progress} | Step: ${progress.currentStep}")
                         updateUiWithProgress(progress)
 
                         if (progress.status == "COMPLETED") {
@@ -126,8 +123,7 @@ class GenerationViewModel(
 
     private fun saveFinalAudiobook(audiobookId: String) {
         val document = currentAnalysisRepository.currentDocument.value ?: return
-        val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())
-        
+
         viewModelScope.launch {
             audiobookRepository.insertAudiobook(
                 Audiobook(
@@ -138,8 +134,8 @@ class GenerationViewModel(
                     coverImagePath = null,
                     totalDurationSeconds = 0, // Should be sum of chapters
                     chapterCount = currentAnalysisRepository.chapters.value.size,
-                    createdAt = now,
-                    updatedAt = now,
+                    createdAt = Instant.fromEpochMilliseconds(0),
+                    updatedAt = Instant.fromEpochMilliseconds(0),
                     status = AudiobookStatus.READY
                 )
             )
@@ -163,7 +159,6 @@ class GenerationViewModel(
             "PENDING" -> GenerationStatus.IDLE
             "PROCESSING" -> GenerationStatus.GENERATING_AUDIO
             "COMPLETED" -> GenerationStatus.COMPLETED
-            "PARTIALLY_COMPLETED" -> GenerationStatus.COMPLETED
             "FAILED" -> GenerationStatus.ERROR
             else -> GenerationStatus.IDLE
         }
@@ -182,20 +177,6 @@ class GenerationViewModel(
     fun retry() {
         _uiState.update { GenerationUiState() }
         startGeneration()
-    }
-
-    fun openAudiobookInSystemPlayer() {
-        val document = currentAnalysisRepository.currentDocument.value ?: return
-        val firstChapter = currentAnalysisRepository.chapters.value.firstOrNull() ?: return
-        
-        // Construct the local path to the first chapter
-        val userHome = "C:/Users/shubham" // Hardcoded for your environment as discussed
-        val path = "file:///$userHome/.echo/output/audiobooks/${document.id}/${firstChapter.id}.mp3"
-        
-        viewModelScope.launch {
-            println("🔈 Requesting system player to open: $path")
-            audioPlayer.load(path)
-        }
     }
 
     override fun onCleared() {

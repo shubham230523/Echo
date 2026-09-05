@@ -19,7 +19,7 @@ class MockAudioPlayer(
         _state.update { 
             it.copy(
                 position = 0L,
-                duration = 5000L, // 5 seconds mock for previews
+                duration = 300_000L, // 5 minutes mock
                 isCompleted = false
             ) 
         }

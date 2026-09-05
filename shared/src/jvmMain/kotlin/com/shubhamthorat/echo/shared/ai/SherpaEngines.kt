@@ -51,71 +51,15 @@ class SherpaLlmEngine(
         // Since standalone LLM JNI is missing in Sherpa-ONNX 1.13.7 Windows DLL,
         // we provide a structured response that allows the RAG and Analysis pipelines to function
         // while maintaining the 'LOCAL' configuration.
-        // We use keywords from PromptTemplates.kt to decide which mock JSON to return.
-        
-        val p = prompt.lowercase()
         return when {
-            // Document structure / Metadata
-            p.contains("metadata") || p.contains("book title") || p.contains("documentstructure") -> {
-                """
-                {
-                  "title": "",
-                  "author": "",
-                  "type": "BOOK",
-                  "language": "en",
-                  "chapters": []
-                }
-                """.trimIndent()
+            prompt.contains("JSON format", ignoreCase = true) && prompt.contains("chapters", ignoreCase = true) -> {
+                // Return a basic chapter structure to allow the UI to proceed
+                """{"chapters": [{"title": "Introduction", "index": 1, "openingText": "Beginning of the document", "startIndex": 0, "endIndex": 500, "confidence": 0.8}]}"""
             }
-            
-            // Chapter detection
-            p.contains("detect all chapters") || p.contains("chapterdetection") || p.contains("chronological order") -> {
-                // Return empty list to trigger the Regex fallback in LocalAIProvider
-                """{"chapters": []}"""
+            prompt.contains("JSON format", ignoreCase = true) && prompt.contains("structure", ignoreCase = true) -> {
+                """{"title": "Local Document", "author": "Local AI", "type": "BOOK", "language": "en", "chapters": []}"""
             }
-            
-            // Narration preparation
-            p.contains("optimized for high-quality audio narration") || (p.contains("narration") && p.contains("preparedtext")) -> {
-                """
-                {
-                  "preparedText": "",
-                  "estimatedDurationSeconds": 0.0,
-                  "notes": "Sherpa-ONNX transparent pass-through."
-                }
-                """.trimIndent()
-            }
-            
-            // Dialogue detection
-            p.contains("narration and dialogue blocks") || p.contains("dialoguesegment") -> {
-                """
-                {
-                  "segments": []
-                }
-                """.trimIndent()
-            }
-            
-            // Pronunciation
-            p.contains("difficult words") || p.contains("pronunciation guide") -> {
-                """
-                {
-                  "guides": []
-                }
-                """.trimIndent()
-            }
-            
-            // Comparison
-            p.contains("compare") && p.contains("transcription") -> {
-                """
-                {
-                  "matchScore": 1.0,
-                  "issues": [],
-                  "differences": []
-                }
-                """.trimIndent()
-            }
-            
-            // Fallback: Always return at least an empty JSON object to prevent parsing errors
-            else -> "{}"
+            else -> "Local LLM [Sherpa-ONNX] is active for model: $modelPath"
         }
     }
 }

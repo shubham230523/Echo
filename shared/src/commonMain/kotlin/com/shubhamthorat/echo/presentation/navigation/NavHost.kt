@@ -190,7 +190,6 @@ fun EchoNavHost(
                     navController.popBackStack()
                 },
                 onFinishClick = {
-                    viewModel.openAudiobookInSystemPlayer()
                     navController.navigate(Route.Library) {
                         popUpTo(Route.Library) { inclusive = true }
                     }

@@ -13,7 +13,6 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
-import io.ktor.server.http.content.*
 import io.ktor.http.content.*
 import io.ktor.server.request.*
 import io.ktor.utils.io.jvm.javaio.*
@@ -135,8 +134,6 @@ fun Application.configureRouting(
         }
 
         route("/generation") {
-            staticFiles("/audio", File(System.getProperty("user.home"), ".echo/output/audiobooks"))
-            
             post("/audiobook") {
                 val request = call.receive<GenerateAudiobookRequest>()
                 val jobId = audiobookGenerationService.startGenerationJob(

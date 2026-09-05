@@ -15,7 +15,7 @@ import com.shubhamthorat.echo.presentation.components.EchoButton
 import com.shubhamthorat.echo.presentation.components.EchoCard
 import com.shubhamthorat.echo.presentation.components.EchoOutlineButton
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
-import com.shubhamthorat.echo.presentation.theme.EchoTheme
+import com.shubhamthorat.echo.presentation.theme.*
 
 @Composable
 fun ImportDocumentScreen(
@@ -38,32 +38,36 @@ fun ImportDocumentScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        ResponsiveContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(EchoTheme.spacing.medium),
-            contentAlignment = Alignment.Center
+                .padding(EchoTheme.spacing.medium)
         ) {
-            if (selectedFile == null) {
-                ImportIdleContent(
-                    onSelectFile = onSelectFileClick
-                )
-            } else {
-                FileSelectedContent(
-                    file = selectedFile,
-                    validationResult = validationResult,
-                    onReplaceFile = onSelectFileClick,
-                    onContinue = onContinueClick,
-                    isImporting = uiState.isImporting
-                )
-            }
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedFile == null) {
+                    ImportIdleContent(
+                        onSelectFile = onSelectFileClick
+                    )
+                } else {
+                    FileSelectedContent(
+                        file = selectedFile,
+                        validationResult = validationResult,
+                        onReplaceFile = onSelectFileClick,
+                        onContinue = onContinueClick,
+                        isImporting = uiState.isImporting
+                    )
+                }
 
-            if (uiState.error != null) {
-                Snackbar(
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) {
-                    Text(uiState.error)
+                if (uiState.error != null) {
+                    Snackbar(
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        Text(uiState.error)
+                    }
                 }
             }
         }

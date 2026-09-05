@@ -17,13 +17,10 @@ class TTSProviderFactory(
         val baseProvider = when (config.providerType) {
             TTSProviderType.OPENAI -> OpenAITTSProvider(client, config)
             TTSProviderType.OPENROUTER -> OpenRouterTTSProvider(client, config)
-            TTSProviderType.DEEPGRAM -> DeepgramTTSProvider(client, config)
             TTSProviderType.LOCAL -> LocalTTSProvider(config, modelManager)
             TTSProviderType.MOCK -> MockTTSProvider()
-            else -> MockTTSProvider() // Default fallback for GOOGLE/ELEVENLABS
+            else -> throw UnsupportedOperationException("TTS Provider ${config.providerType} not implemented yet")
         }
-
-        println("🏗️ Created TTS Provider: ${baseProvider.javaClass.simpleName}")
 
         return if (config.useCache) {
             CachingTTSProvider(

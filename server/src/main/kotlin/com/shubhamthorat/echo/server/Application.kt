@@ -21,7 +21,6 @@ import com.shubhamthorat.echo.server.generation.GenerationService
 import com.shubhamthorat.echo.server.generation.AudiobookGenerationService
 import com.shubhamthorat.echo.server.voice.MockVoiceProvider
 import com.shubhamthorat.echo.server.voice.TTSProviderFactory
-import com.shubhamthorat.echo.server.voice.VoiceProvider
 import com.shubhamthorat.echo.server.voice.VoiceService
 import com.shubhamthorat.echo.shared.ai.JvmModelManager
 import com.shubhamthorat.echo.shared.ai.KtorModelDownloader
@@ -66,10 +65,7 @@ fun Application.module() {
     val narrationService = NarrationService(aiProvider)
     val generationService = GenerationService(ttsProvider)
     val audiobookGenerationService = AudiobookGenerationService(narrationService, generationService)
-    
-    // Dynamic voice provider based on TTS configuration
-    val voiceProvider = if (ttsProvider is VoiceProvider) ttsProvider else MockVoiceProvider()
-    val voiceService = VoiceService(voiceProvider)
+    val voiceService = VoiceService(MockVoiceProvider())
     
     configureLogging()
     configureSerialization()

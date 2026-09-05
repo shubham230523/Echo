@@ -33,13 +33,8 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-val isDesktopOnly = extra.has("desktopOnly") && extra["desktopOnly"].toString() == "true"
-
 include(":desktopApp")
 include(":shared")
 include(":server")
-
-if (!isDesktopOnly) {
-    include(":androidApp")
-    include(":webApp")
-}
+include(":androidApp")
+include(":webApp")

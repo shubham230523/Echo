@@ -100,9 +100,9 @@ fun PlayerScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
+
                     Spacer(modifier = Modifier.height(EchoTheme.spacing.extraSmall))
-                    
+
                     Text(
                         text = uiState.currentChapter?.chapterId ?: "Initializing...",
                         style = MaterialTheme.typography.bodyLarge,
@@ -135,7 +135,7 @@ fun PlayerScreen(
                                 inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         )
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -193,7 +193,7 @@ fun PlayerScreen(
                             Icon(Icons.Default.SkipNext, "Next Chapter", modifier = Modifier.size(32.dp))
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(EchoTheme.spacing.large))
 
                     // Bottom Row: Speed & Chapters

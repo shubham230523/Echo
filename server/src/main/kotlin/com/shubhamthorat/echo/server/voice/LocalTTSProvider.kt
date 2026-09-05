@@ -11,13 +11,7 @@ import java.util.*
 class LocalTTSProvider(
     private val config: TTSConfig,
     private val modelManager: ModelManager? = null
-) : TTSProvider, VoiceProvider {
-
-    override suspend fun getAvailableVoices(): List<BackendVoice> {
-        return listOf(
-            BackendVoice("local-vits", "Local Neural Voice", "SHERPA", "en-US", "NEUTRAL", null)
-        )
-    }
+) : TTSProvider {
 
     private val ttsEngine: SherpaTtsEngine by lazy {
         // 1. Try manual path from config
@@ -35,13 +29,8 @@ class LocalTTSProvider(
         val modelFile = File(finalModelPath)
         val modelDir = modelFile.parentFile ?: File(System.getProperty("user.home"), ".echo/models")
         
-        if (!modelFile.exists()) {
-            println("⚠️ Local TTS Model NOT FOUND at ${modelFile.absolutePath}")
-            println("   Voices will be simulated until models are downloaded.")
-        } else {
-            println("🔊 Initializing Local TTS Engine:")
-            println("   Model: ${modelFile.absolutePath} (Exists: true)")
-        }
+        println("🔊 Initializing Local TTS Engine:")
+        println("   Model: ${modelFile.absolutePath} (Exists: ${modelFile.exists()})")
         
         SherpaTtsEngine(
             modelPath = modelFile.absolutePath,
@@ -54,46 +43,17 @@ class LocalTTSProvider(
     override suspend fun synthesize(request: TTSRequest): TTSResult {
         println("🔊 Synthesizing locally: ${request.text.take(50)}...")
         
-        val modelPath = if (config.voiceModel != "local-vits" && config.voiceModel.isNotBlank()) config.voiceModel 
-                        else File(System.getProperty("user.home"), ".echo/models/vits.onnx").absolutePath
+        val audioSamples = ttsEngine.generateAudio(request.text)
         
-        if (!File(modelPath).exists()) {
-            return simulateSynthesis(request)
-        }
-
-        return try {
-            val audioSamples = ttsEngine.generateAudio(request.text)
-            
-            // Save to temporary WAV file
-            val outputDir = File("output/audio").apply { mkdirs() }
-            val outputFile = File(outputDir, "local_${UUID.randomUUID()}.wav")
-            
-            saveWav(outputFile, audioSamples, 22050) // Assuming 22050Hz for Sherpa VITS
-            
-            TTSResult(
-                audioFileUri = outputFile.absolutePath,
-                durationSeconds = audioSamples.size.toDouble() / 22050.0,
-                format = "WAV"
-            )
-        } catch (e: Exception) {
-            println("❌ Local TTS synthesis failed: ${e.message}")
-            simulateSynthesis(request)
-        }
-    }
-
-    private fun simulateSynthesis(request: TTSRequest): TTSResult {
-        // Return a silent or very short generated beep so the UI doesn't hang
-        val sampleRate = 22050
-        val duration = (request.text.length / 15.0).coerceAtMost(5.0)
-        val samples = FloatArray((sampleRate * duration).toInt())
-        
+        // Save to temporary WAV file
         val outputDir = File("output/audio").apply { mkdirs() }
-        val outputFile = File(outputDir, "simulated_${UUID.randomUUID()}.wav")
-        saveWav(outputFile, samples, sampleRate)
+        val outputFile = File(outputDir, "local_${UUID.randomUUID()}.wav")
+        
+        saveWav(outputFile, audioSamples, 22050) // Assuming 22050Hz for Sherpa VITS
         
         return TTSResult(
             audioFileUri = outputFile.absolutePath,
-            durationSeconds = duration,
+            durationSeconds = audioSamples.size.toDouble() / 22050.0,
             format = "WAV"
         )
     }

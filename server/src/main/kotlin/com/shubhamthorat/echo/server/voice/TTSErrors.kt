@@ -7,6 +7,5 @@ sealed class TTSProviderException(message: String, cause: Throwable? = null) : E
     class RateLimitExceeded(message: String = "TTS rate limit exceeded") : TTSProviderException(message)
     class VoiceNotFound(voiceId: String) : TTSProviderException("Voice with ID $voiceId not found")
     class InvalidParameters(message: String) : TTSProviderException(message)
-    class InvalidRequest(message: String) : TTSProviderException(message)
     class ServiceUnavailable(message: String, cause: Throwable? = null) : TTSProviderException(message, cause)
 }
