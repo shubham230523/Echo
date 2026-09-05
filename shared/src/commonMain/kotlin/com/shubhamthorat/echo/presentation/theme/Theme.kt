@@ -35,12 +35,14 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun EchoTheme(
     darkTheme: Boolean = true, // Default to true for Dark Mode First
+    adaptiveConfig: AdaptiveConfig = AdaptiveConfig(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     CompositionLocalProvider(
-        LocalSpacing provides EchoSpacing()
+        LocalSpacing provides EchoSpacing(),
+        LocalAdaptiveConfig provides adaptiveConfig
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -58,4 +60,8 @@ object EchoTheme {
     val spacing: EchoSpacing
         @Composable
         get() = LocalSpacing.current
+        
+    val ads: AdaptiveConfig
+        @Composable
+        get() = LocalAdaptiveConfig.current
 }

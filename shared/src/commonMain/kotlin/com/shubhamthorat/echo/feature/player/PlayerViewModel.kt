@@ -2,155 +2,123 @@ package com.shubhamthorat.echo.feature.player
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shubhamthorat.echo.domain.model.Audiobook
-import com.shubhamthorat.echo.domain.model.AudiobookStatus
-import com.shubhamthorat.echo.domain.model.AudioChapter
-import com.shubhamthorat.echo.domain.model.AudioGenerationStatus
+import com.shubhamthorat.echo.core.audio.AudioPlayer
+import com.shubhamthorat.echo.domain.model.*
+import com.shubhamthorat.echo.domain.repository.AudiobookRepository
+import com.shubhamthorat.echo.domain.repository.CurrentAnalysisRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-// Removed Clock import
 import kotlinx.datetime.Instant
-// Removed Clock import
-class PlayerViewModel : ViewModel() {
+
+class PlayerViewModel(
+    private val currentAnalysisRepository: CurrentAnalysisRepository,
+    private val audiobookRepository: AudiobookRepository,
+    private val audioPlayer: AudioPlayer
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
-    private var playbackJob: Job? = null
-
     init {
-        // Load mock data for initial UI state
-        val mockAudiobook = Audiobook(
-            id = "gatsby_1",
-            documentId = "doc_1",
-            title = "The Great Gatsby",
-            author = "F. Scott Fitzgerald",
-            coverImagePath = null,
-            totalDurationSeconds = 1800,
-            chapterCount = 9,
-            createdAt = Instant.fromEpochMilliseconds(0),
-            updatedAt = Instant.fromEpochMilliseconds(0),
-            status = AudiobookStatus.READY
-        )
+        loadCurrentAudiobook()
+        observePlayerState()
+    }
 
-        val mockChapter = AudioChapter(
-            chapterId = "chapter_1",
-            audioPath = "path/to/audio.mp3",
-            durationSeconds = 640.0,
-            fileSizeBytes = 1024L * 1024 * 5,
-            generationStatus = AudioGenerationStatus.COMPLETED
-        )
+    private fun observePlayerState() {
+        viewModelScope.launch {
+            audioPlayer.state.collect { state ->
+                _uiState.update { 
+                    it.copy(
+                        currentPosition = state.position,
+                        duration = state.duration,
+                        isPlaying = state.isPlaying,
+                        playbackSpeed = state.playbackSpeed
+                    )
+                }
+            }
+        }
+    }
 
-        val mockChapters = listOf(
-            mockChapter,
-            AudioChapter(
-                chapterId = "chapter_2",
-                audioPath = "path/to/audio2.mp3",
-                durationSeconds = 820.0,
-                fileSizeBytes = 1024L * 1024 * 7,
-                generationStatus = AudioGenerationStatus.COMPLETED
-            ),
-            AudioChapter(
-                chapterId = "chapter_3",
-                audioPath = "path/to/audio3.mp3",
-                durationSeconds = 450.0,
-                fileSizeBytes = 1024L * 1024 * 4,
-                generationStatus = AudioGenerationStatus.COMPLETED
-            )
-        )
+    private fun loadCurrentAudiobook() {
+        val doc = currentAnalysisRepository.currentDocument.value ?: return
+        
+        viewModelScope.launch {
+            // Try to find the generated audiobook for this document
+            val allBooks = audiobookRepository.observeAllAudiobooks().firstOrNull()
+            val audiobook = allBooks?.find { it.documentId == doc.id } ?: return@launch
+            
+            // Map chapters to AudioChapters
+            val rootDir = "file:///C:/Users/shubham/.echo/output/audiobooks"
+            val chapters = currentAnalysisRepository.chapters.value.map { 
+                AudioChapter(
+                    chapterId = it.id,
+                    audioPath = "$rootDir/${doc.id}/${it.id}.mp3",
+                    durationSeconds = it.estimatedDurationSeconds.toDouble(),
+                    generationStatus = AudioGenerationStatus.COMPLETED
+                )
+            }
 
-        _uiState.update {
-            it.copy(
-                audiobook = mockAudiobook,
-                currentChapter = mockChapter,
-                chapters = mockChapters,
-                duration = 640000L, // 640 seconds in ms
-                currentPosition = 45000L // 45 seconds in ms
-            )
+            _uiState.update { 
+                it.copy(
+                    audiobook = audiobook,
+                    chapters = chapters,
+                    currentChapter = chapters.firstOrNull(),
+                    duration = chapters.firstOrNull()?.durationSeconds?.toLong()?.times(1000) ?: 0L
+                )
+            }
+            
+            // Auto-load first chapter
+            chapters.firstOrNull()?.audioPath?.let { audioPlayer.load(it) }
         }
     }
 
     fun play() {
-        if (_uiState.value.isPlaying) return
-
-        _uiState.update { it.copy(isPlaying = true) }
-        startPlaybackSimulation()
+        audioPlayer.play()
     }
 
     fun pause() {
-        if (!_uiState.value.isPlaying) return
-
-        _uiState.update { it.copy(isPlaying = false) }
-        playbackJob?.cancel()
+        audioPlayer.pause()
     }
 
     fun seekTo(position: Long) {
-        _uiState.update {
-            it.copy(currentPosition = position.coerceIn(0, it.duration))
-        }
+        audioPlayer.seekTo(position)
     }
 
     fun skipForward() {
-        seekTo(_uiState.value.currentPosition + 15000L) // +15 seconds
+        val newPos = _uiState.value.currentPosition + 15000L
+        audioPlayer.seekTo(newPos)
     }
 
     fun skipBackward() {
-        seekTo(_uiState.value.currentPosition - 15000L) // -15 seconds
+        val newPos = _uiState.value.currentPosition - 15000L
+        audioPlayer.seekTo(newPos)
     }
 
     fun nextChapter() {
-        // Mocking next chapter transition
-        _uiState.update {
-            it.copy(
-                currentPosition = 0L,
-                duration = 820000L,
-                currentChapter = it.currentChapter?.copy(chapterId = "chapter_2", durationSeconds = 820.0)
-            )
+        val currentIndex = _uiState.value.chapters.indexOf(_uiState.value.currentChapter)
+        if (currentIndex != -1 && currentIndex < _uiState.value.chapters.size - 1) {
+            selectChapter(_uiState.value.chapters[currentIndex + 1])
         }
     }
 
     fun previousChapter() {
-        // Mocking previous chapter transition
-        _uiState.update {
-            it.copy(
-                currentPosition = 0L,
-                duration = 640000L,
-                currentChapter = it.chapters.firstOrNull() ?: it.currentChapter
-            )
+        val currentIndex = _uiState.value.chapters.indexOf(_uiState.value.currentChapter)
+        if (currentIndex > 0) {
+            selectChapter(_uiState.value.chapters[currentIndex - 1])
         }
     }
 
     fun selectChapter(chapter: AudioChapter) {
-        _uiState.update {
-            it.copy(
-                currentChapter = chapter,
-                currentPosition = 0L,
-                duration = (chapter.durationSeconds * 1000).toLong()
-            )
+        _uiState.update { it.copy(currentChapter = chapter) }
+        viewModelScope.launch {
+            chapter.audioPath?.let { audioPlayer.load(it) }
+            audioPlayer.play()
         }
     }
 
     fun setPlaybackSpeed(speed: Float) {
-        _uiState.update { it.copy(playbackSpeed = speed) }
-    }
-
-    private fun startPlaybackSimulation() {
-        playbackJob?.cancel()
-        playbackJob = viewModelScope.launch {
-            while (_uiState.value.isPlaying && _uiState.value.currentPosition < _uiState.value.duration) {
-                delay(1000)
-                _uiState.update {
-                    it.copy(currentPosition = (it.currentPosition + 1000).coerceAtMost(it.duration))
-                }
-            }
-            if (_uiState.value.currentPosition >= _uiState.value.duration) {
-                _uiState.update { it.copy(isPlaying = false) }
-            }
-        }
+        audioPlayer.setPlaybackSpeed(speed)
     }
 }

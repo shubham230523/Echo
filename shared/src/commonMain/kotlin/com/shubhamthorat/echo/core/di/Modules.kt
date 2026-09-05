@@ -1,6 +1,7 @@
 package com.shubhamthorat.echo.core.di
 
 import io.ktor.client.HttpClient
+import com.shubhamthorat.echo.core.audio.AudioPlayer
 import com.shubhamthorat.echo.core.network.HttpClientFactory
 import com.shubhamthorat.echo.core.network.NetworkConfig
 import com.shubhamthorat.echo.data.remote.EchoApi
@@ -60,7 +61,13 @@ val featureModule = module {
     viewModel { VoiceSelectionViewModel(get(), get(), get()) }
     viewModel { GenerationViewModel(get(), get(), get(), get()) }
     viewModel { LocalGenerationViewModel(get(), get(), get(), get()) }
-    viewModel { PlayerViewModel() }
+    viewModel {
+        PlayerViewModel(
+            currentAnalysisRepository = get<CurrentAnalysisRepository>(),
+            audiobookRepository = get<AudiobookRepository>(),
+            audioPlayer = get<AudioPlayer>()
+        )
+    }
     viewModel { SettingsViewModel() }
 }
 

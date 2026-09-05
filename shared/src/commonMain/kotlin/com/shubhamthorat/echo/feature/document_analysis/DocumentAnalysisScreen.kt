@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shubhamthorat.echo.domain.model.AnalysisStage
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
-import com.shubhamthorat.echo.presentation.theme.EchoTheme
+import com.shubhamthorat.echo.presentation.theme.*
 
 private val AnalysisStage.displayTitle: String
     get() = when (this) {
@@ -42,102 +42,106 @@ fun DocumentAnalysisScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+        ResponsiveContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(EchoTheme.spacing.large),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(EchoTheme.spacing.large)
         ) {
-            Spacer(modifier = Modifier.height(EchoTheme.spacing.medium))
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(EchoTheme.spacing.medium))
 
-            // Main Progress
-            if (uiState.error != null) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle, // Using checkcircle for now, maybe error icon later
-                    contentDescription = null,
-                    modifier = Modifier.size(120.dp),
-                    tint = MaterialTheme.colorScheme.error
-                )
-            } else {
-                CircularProgressIndicator(
-                    progress = { uiState.progress },
-                    modifier = Modifier.size(120.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 8.dp,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(EchoTheme.spacing.extraLarge))
-
-            // Current Stage Detail
-            if (uiState.error != null) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Analysis Failed",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
+                // Main Progress
+                if (uiState.error != null) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle, // Using checkcircle for now, maybe error icon later
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp),
+                        tint = MaterialTheme.colorScheme.error
                     )
-                    Spacer(modifier = Modifier.height(EchoTheme.spacing.small))
-                    Text(
-                        text = uiState.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+                } else {
+                    CircularProgressIndicator(
+                        progress = { uiState.progress },
+                        modifier = Modifier.size(120.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 8.dp,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
                 }
-            } else {
-                AnimatedContent(
-                    targetState = uiState.currentStage,
-                    transitionSpec = {
-                        fadeIn() + slideInVertically() togetherWith fadeOut() + slideOutVertically()
-                    },
-                    label = "AnalysisStageAnimation"
-                ) { stage ->
+
+                Spacer(modifier = Modifier.height(EchoTheme.spacing.extraLarge))
+
+                // Current Stage Detail
+                if (uiState.error != null) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = stage.displayTitle,
+                            text = "Analysis Failed",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onBackground,
+                            color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(EchoTheme.spacing.small))
                         Text(
-                            text = uiState.statusMessage,
+                            text = uiState.error,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(EchoTheme.spacing.huge))
-
-            // Stage List
-            if (uiState.error == null) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
-                ) {
-                    AnalysisStage.entries.forEach { stage ->
-                        if (stage != AnalysisStage.COMPLETED) {
-                            StageItem(
-                                title = stage.displayTitle,
-                                isCompleted = stage.ordinal < uiState.currentStage.ordinal || uiState.isCompleted,
-                                isActive = stage == uiState.currentStage && !uiState.isCompleted
+                } else {
+                    AnimatedContent(
+                        targetState = uiState.currentStage,
+                        transitionSpec = {
+                            fadeIn() + slideInVertically() togetherWith fadeOut() + slideOutVertically()
+                        },
+                        label = "AnalysisStageAnimation"
+                    ) { stage ->
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = stage.displayTitle,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(EchoTheme.spacing.small))
+                            Text(
+                                text = uiState.statusMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
-            } else {
-                Button(
-                    onClick = onBackClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Go Back")
+
+                Spacer(modifier = Modifier.height(EchoTheme.spacing.huge))
+
+                // Stage List
+                if (uiState.error == null) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
+                    ) {
+                        AnalysisStage.entries.forEach { stage ->
+                            if (stage != AnalysisStage.COMPLETED) {
+                                StageItem(
+                                    title = stage.displayTitle,
+                                    isCompleted = stage.ordinal < uiState.currentStage.ordinal || uiState.isCompleted,
+                                    isActive = stage == uiState.currentStage && !uiState.isCompleted
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onBackClick,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Go Back")
+                    }
                 }
             }
         }

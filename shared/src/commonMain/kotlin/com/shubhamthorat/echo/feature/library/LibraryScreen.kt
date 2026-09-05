@@ -2,6 +2,9 @@ package com.shubhamthorat.echo.feature.library
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,7 +20,7 @@ import com.shubhamthorat.echo.domain.model.Audiobook
 import com.shubhamthorat.echo.presentation.components.AudiobookListItem
 import com.shubhamthorat.echo.presentation.components.EchoButton
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
-import com.shubhamthorat.echo.presentation.theme.EchoTheme
+import com.shubhamthorat.echo.presentation.theme.*
 
 @Composable
 fun LibraryScreen(
@@ -157,24 +160,54 @@ private fun LibraryListContent(
     audiobooks: List<Audiobook>,
     onAudiobookClick: (Audiobook) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(EchoTheme.spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
-    ) {
-        item {
+    val adaptive = EchoTheme.ads
+    
+    if (adaptive.isMobile) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(EchoTheme.spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
+        ) {
+            item {
+                Text(
+                    text = "Your Library",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            items(audiobooks) { audiobook ->
+                AudiobookListItem(
+                    audiobook = audiobook,
+                    onClick = { onAudiobookClick(audiobook) }
+                )
+            }
+        }
+    } else {
+        // Tablet and Desktop: Grid layout
+        Column(
+            modifier = Modifier.fillMaxSize().padding(EchoTheme.spacing.medium)
+        ) {
             Text(
                 text = "Your Library",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = EchoTheme.spacing.medium)
             )
-        }
-
-        items(audiobooks) { audiobook ->
-            AudiobookListItem(
-                audiobook = audiobook,
-                onClick = { onAudiobookClick(audiobook) }
-            )
+            
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 300.dp),
+                horizontalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(audiobooks) { audiobook ->
+                    AudiobookListItem(
+                        audiobook = audiobook,
+                        onClick = { onAudiobookClick(audiobook) }
+                    )
+                }
+            }
         }
     }
 }

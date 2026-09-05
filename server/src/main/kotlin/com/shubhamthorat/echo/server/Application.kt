@@ -65,7 +65,7 @@ fun Application.module() {
     val narrationService = NarrationService(aiProvider)
     val generationService = GenerationService(ttsProvider)
     val audiobookGenerationService = AudiobookGenerationService(narrationService, generationService)
-    val voiceService = VoiceService(MockVoiceProvider())
+    val voiceService = VoiceService(ttsProvider as? com.shubhamthorat.echo.server.voice.VoiceProvider ?: com.shubhamthorat.echo.server.voice.MockVoiceProvider())
     
     configureLogging()
     configureSerialization()

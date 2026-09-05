@@ -1,7 +1,7 @@
 package com.shubhamthorat.echo.core.di
 
 import com.shubhamthorat.echo.core.audio.AudioPlayer
-import com.shubhamthorat.echo.core.audio.MockAudioPlayer
+import com.shubhamthorat.echo.core.audio.JvmAudioPlayer
 import com.shubhamthorat.echo.core.network.createJvmHttpClientEngine
 import com.shubhamthorat.echo.data.db.EchoDatabase
 import com.shubhamthorat.echo.data.db.getDatabaseBuilder
@@ -36,6 +36,6 @@ actual val platformModule: Module = module {
     }
     
     single<HttpClientEngine> { createJvmHttpClientEngine() }
-    single<AudioPlayer> { MockAudioPlayer() }
+    single<AudioPlayer> { JvmAudioPlayer() }
     single<PdfProcessor> { JvmPdfProcessor() }
 }

@@ -8,6 +8,7 @@ enum class TTSProviderType {
     GOOGLE,
     ELEVENLABS,
     OPENROUTER,
+    DEEPGRAM,
     LOCAL,
     MOCK
 }

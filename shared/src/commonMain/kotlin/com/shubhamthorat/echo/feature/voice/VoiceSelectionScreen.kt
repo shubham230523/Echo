@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shubhamthorat.echo.domain.model.Voice
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
-import com.shubhamthorat.echo.presentation.theme.EchoTheme
+import com.shubhamthorat.echo.presentation.theme.*
 
 @Composable
 fun VoiceSelectionScreen(
@@ -57,7 +60,7 @@ fun VoiceSelectionScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        ResponsiveContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -65,32 +68,69 @@ fun VoiceSelectionScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(EchoTheme.spacing.medium),
-                    verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
-                ) {
-                    item {
+                val adaptive = EchoTheme.ads
+                
+                if (adaptive.isMobile) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(EchoTheme.spacing.medium),
+                        verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium)
+                    ) {
+                        item {
+                            Text(
+                                text = "Select a voice that best fits your content style.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = EchoTheme.spacing.medium)
+                            )
+                        }
+
+                        items(uiState.voices) { voice ->
+                            val isPreviewLoading = uiState.previewingVoiceId == voice.id && uiState.isPreviewLoading
+                            val isPlaying = uiState.previewingVoiceId == voice.id && !uiState.isPreviewLoading
+                            
+                            VoiceItem(
+                                voice = voice,
+                                isSelected = uiState.selectedVoiceId == voice.id,
+                                isPreviewLoading = isPreviewLoading,
+                                isPlaying = isPlaying,
+                                onSelect = { onVoiceSelect(voice.id) },
+                                onPreviewClick = { onPreviewClick(voice.id) }
+                            )
+                        }
+                    }
+                } else {
+                    // Tablet and Desktop: Grid layout
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(EchoTheme.spacing.medium)
+                    ) {
                         Text(
                             text = "Select a voice that best fits your content style.",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = EchoTheme.spacing.medium)
                         )
-                    }
-
-                    items(uiState.voices) { voice ->
-                        val isPreviewLoading = uiState.previewingVoiceId == voice.id && uiState.isPreviewLoading
-                        val isPlaying = uiState.previewingVoiceId == voice.id && !uiState.isPreviewLoading
                         
-                        VoiceItem(
-                            voice = voice,
-                            isSelected = uiState.selectedVoiceId == voice.id,
-                            isPreviewLoading = isPreviewLoading,
-                            isPlaying = isPlaying,
-                            onSelect = { onVoiceSelect(voice.id) },
-                            onPreviewClick = { onPreviewClick(voice.id) }
-                        )
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 350.dp),
+                            horizontalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium),
+                            verticalArrangement = Arrangement.spacedBy(EchoTheme.spacing.medium),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(uiState.voices) { voice ->
+                                val isPreviewLoading = uiState.previewingVoiceId == voice.id && uiState.isPreviewLoading
+                                val isPlaying = uiState.previewingVoiceId == voice.id && !uiState.isPreviewLoading
+                                
+                                VoiceItem(
+                                    voice = voice,
+                                    isSelected = uiState.selectedVoiceId == voice.id,
+                                    isPreviewLoading = isPreviewLoading,
+                                    isPlaying = isPlaying,
+                                    onSelect = { onVoiceSelect(voice.id) },
+                                    onPreviewClick = { onPreviewClick(voice.id) }
+                                )
+                            }
+                        }
                     }
                 }
             }

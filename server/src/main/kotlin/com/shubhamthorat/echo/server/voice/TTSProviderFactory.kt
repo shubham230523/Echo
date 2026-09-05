@@ -17,6 +17,7 @@ class TTSProviderFactory(
         val baseProvider = when (config.providerType) {
             TTSProviderType.OPENAI -> OpenAITTSProvider(client, config)
             TTSProviderType.OPENROUTER -> OpenRouterTTSProvider(client, config)
+            TTSProviderType.DEEPGRAM -> DeepgramTTSProvider(client, config)
             TTSProviderType.LOCAL -> LocalTTSProvider(config, modelManager)
             TTSProviderType.MOCK -> MockTTSProvider()
             else -> throw UnsupportedOperationException("TTS Provider ${config.providerType} not implemented yet")

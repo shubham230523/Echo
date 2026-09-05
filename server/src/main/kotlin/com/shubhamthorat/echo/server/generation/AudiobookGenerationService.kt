@@ -77,10 +77,24 @@ class AudiobookGenerationService(
                                     
                                     // 2. Generate Audio
                                     val generationResult = generationService.generateChapterAudio(
+                                        documentId = jobStatus.documentId,
                                         chapterId = chapter.id,
                                         narrationText = prepared.preparedText,
                                         voiceId = voiceId,
-                                        speed = speed
+                                        speed = speed,
+                                        onProgress = { chapterProgress, step ->
+                                            updateJobStatus(jobId) { 
+                                                // Calculate fine-grained total progress
+                                                val baseProgress = completedCount.get().toFloat() / chapters.size
+                                                val addedProgress = (chapterProgress / chapters.size)
+                                                
+                                                it.copy(
+                                                    currentChapterTitle = chapter.title,
+                                                    currentStep = step,
+                                                    progress = (baseProgress + addedProgress).coerceAtMost(0.99f)
+                                                )
+                                            }
+                                        }
                                     )
 
                                     if (generationResult.status == "FAILED") {

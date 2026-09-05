@@ -139,9 +139,23 @@ class AnalysisWorkflow(private val aiProvider: AIProvider) {
         }
 
         val results = deferredChapters.awaitAll()
-        val allChapters = results.flatMap { it.first }
+        val allChapters = results.flatMap { it.first }.toMutableList()
         val title = results.firstOrNull { it.second != null }?.second ?: "Unknown Title"
         val author = results.firstOrNull { it.third != null }?.third
+        
+        // TOC-based Chapter Detection (Manual Fallback)
+        if (allChapters.size < 2) {
+            println("⚠️ Low chapter count detected. Attempting Regex-based TOC detection...")
+            val tocRegex = Regex("(?i)(chapter|ch\\.|part|book)\\s+([0-9ivxlc]+|one|two|three|four|five|six|seven|eight|nine|ten)", RegexOption.MULTILINE)
+            val matches = tocRegex.findAll(state.fullText)
+            matches.forEach { match ->
+                val foundTitle = match.value
+                val foundOffset = match.range.first
+                if (!allChapters.any { Math.abs(it.startIndex - foundOffset) < 500 }) {
+                    allChapters.add(DetectedChapter(title = foundTitle, startIndex = foundOffset, index = -1))
+                }
+            }
+        }
 
         state.copy(
             rawChapters = allChapters,

@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.shubhamthorat.echo.domain.model.Chapter
 import com.shubhamthorat.echo.presentation.components.EchoTopBar
-import com.shubhamthorat.echo.presentation.theme.EchoTheme
+import com.shubhamthorat.echo.presentation.theme.*
 
 @Composable
 fun ChaptersScreen(
@@ -77,7 +77,7 @@ fun ChaptersScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        ResponsiveContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
