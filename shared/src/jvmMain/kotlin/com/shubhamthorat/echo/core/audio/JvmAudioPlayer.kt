@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.awt.Desktop
+import java.io.File
 import java.net.URI
 
 class JvmAudioPlayer(
@@ -28,17 +29,31 @@ class JvmAudioPlayer(
             ) 
         }
         
-        // Auto-open in system player for Desktop fallback
+        // Auto-open in system player for Desktop experience
         try {
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                println("🔈 Opening audio in system player: $uri")
-                Desktop.getDesktop().browse(URI(uri))
+            val file = if (uri.startsWith("file:")) {
+                File(URI(uri))
+            } else if (uri.startsWith("http")) {
+                // If it's an HTTP URL, we still try to open it (will likely open in browser)
+                null
             } else {
-                // Windows specific fallback
-                val os = System.getProperty("os.name").lowercase()
-                if (os.contains("win")) {
-                    Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler $uri")
+                File(uri)
+            }
+
+            if (file != null && file.exists()) {
+                println("🔈 Opening file in system media player: ${file.absolutePath}")
+                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                    Desktop.getDesktop().open(file)
+                } else {
+                    // Windows specific fallback
+                    val os = System.getProperty("os.name").lowercase()
+                    if (os.contains("win")) {
+                        Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler \"${file.absolutePath}\"")
+                    }
                 }
+            } else if (uri.startsWith("http")) {
+                println("🔈 Opening URL in system browser/player: $uri")
+                Desktop.getDesktop().browse(URI(uri))
             }
         } catch (e: Exception) {
             println("⚠️ Could not open system player: ${e.message}")

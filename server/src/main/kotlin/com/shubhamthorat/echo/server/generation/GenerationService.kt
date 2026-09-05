@@ -22,6 +22,7 @@ class GenerationService(
     private val lock = Mutex()
 
     suspend fun generateChapterAudio(
+        documentId: String,
         chapterId: String,
         narrationText: String,
         voiceId: String,
@@ -85,7 +86,7 @@ class GenerationService(
             }
 
             // Merge all chunks into one final file
-            val finalAudioFile = mergeAudioFiles(tempAudioFiles, chapterId)
+            val finalAudioFile = mergeAudioFiles(tempAudioFiles, documentId, chapterId)
             println("✅ Chapter generation complete: ${finalAudioFile.absolutePath}")
 
             // Extract actual metadata
@@ -98,7 +99,7 @@ class GenerationService(
 
             val completedStatus = currentStatus.copy(
                 status = "COMPLETED",
-                audioUrl = "http://localhost:8080/generation/audio/${chapterId.substringBefore("_ch")}/${chapterId}.mp3",
+                audioUrl = "file:///C:/Users/shubham/.echo/output/audiobooks/$documentId/$chapterId.mp3",
                 durationSeconds = duration,
                 fileSizeByte = fileSize
             )
@@ -157,9 +158,9 @@ class GenerationService(
         return chunks
     }
 
-    private fun mergeAudioFiles(files: List<File>, chapterId: String): File {
+    private fun mergeAudioFiles(files: List<File>, documentId: String, chapterId: String): File {
         val rootDir = File(System.getProperty("user.home"), ".echo/output/audiobooks")
-        val publicDir = File(rootDir, chapterId.substringBefore("_ch"))
+        val publicDir = File(rootDir, documentId)
         publicDir.mkdirs()
         val targetFile = File(publicDir, "${chapterId}.mp3")
         

@@ -50,10 +50,11 @@ class PlayerViewModel(
             val audiobook = allBooks?.find { it.documentId == doc.id } ?: return@launch
             
             // Map chapters to AudioChapters
+            val rootDir = "file:/C:/Users/shubham/.echo/output/audiobooks"
             val chapters = currentAnalysisRepository.chapters.value.map { 
                 AudioChapter(
                     chapterId = it.id,
-                    audioPath = "http://localhost:8080/generation/audio/${doc.id}/${it.id}.mp3",
+                    audioPath = "$rootDir/${doc.id}/${it.id}.mp3",
                     durationSeconds = it.estimatedDurationSeconds.toDouble(),
                     generationStatus = AudioGenerationStatus.COMPLETED
                 )

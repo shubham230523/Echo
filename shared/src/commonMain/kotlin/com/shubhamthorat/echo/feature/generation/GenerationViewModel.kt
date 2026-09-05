@@ -2,6 +2,7 @@ package com.shubhamthorat.echo.feature.generation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shubhamthorat.echo.core.audio.AudioPlayer
 import com.shubhamthorat.echo.core.result.AppResult
 import com.shubhamthorat.echo.domain.model.*
 import com.shubhamthorat.echo.domain.repository.AudiobookRepository
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /**
@@ -25,7 +25,8 @@ class GenerationViewModel(
     private val remoteRepository: RemoteGenerationRepository,
     private val currentAnalysisRepository: CurrentAnalysisRepository,
     private val audiobookRepository: AudiobookRepository,
-    private val chapterRepository: ChapterRepository
+    private val chapterRepository: ChapterRepository,
+    private val audioPlayer: AudioPlayer
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenerationUiState())
@@ -181,6 +182,20 @@ class GenerationViewModel(
     fun retry() {
         _uiState.update { GenerationUiState() }
         startGeneration()
+    }
+
+    fun openAudiobookInSystemPlayer() {
+        val document = currentAnalysisRepository.currentDocument.value ?: return
+        val firstChapter = currentAnalysisRepository.chapters.value.firstOrNull() ?: return
+        
+        // Construct the local path to the first chapter
+        val userHome = "C:/Users/shubham" // Hardcoded for your environment as discussed
+        val path = "file:///$userHome/.echo/output/audiobooks/${document.id}/${firstChapter.id}.mp3"
+        
+        viewModelScope.launch {
+            println("🔈 Requesting system player to open: $path")
+            audioPlayer.load(path)
+        }
     }
 
     override fun onCleared() {

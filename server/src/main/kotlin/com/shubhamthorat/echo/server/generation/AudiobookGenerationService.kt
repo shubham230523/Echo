@@ -77,6 +77,7 @@ class AudiobookGenerationService(
                                     
                                     // 2. Generate Audio
                                     val generationResult = generationService.generateChapterAudio(
+                                        documentId = jobStatus.documentId,
                                         chapterId = chapter.id,
                                         narrationText = prepared.preparedText,
                                         voiceId = voiceId,
